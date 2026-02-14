@@ -41,5 +41,8 @@
 ? /proc/net/snmp & /proc/net/netstat
 
 # Wi-Fi
+- SSID/BSSID/RSSI/bitrate/MCS/quality (in %)
+? Пока хз
 
 # Network Profiles
+- Просто парсим весь NetworkManager
