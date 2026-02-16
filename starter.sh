@@ -18,7 +18,28 @@ if [[ "$(id -u)" -ne 0 ]]; then
 fi
 
 function install_ubuntu_like() {
-    $SUDO apt-get update
+    if command -v timedatectl >/dev/null 2>&1; then
+        $SUDO timedatectl set-ntp true || true
+    fi
+
+    local attempts=3
+    local wait_seconds=75
+    local i=1
+    while (( i <= attempts )); do
+        if $SUDO apt-get update; then
+            break
+        fi
+
+        if (( i == attempts )); then
+            echo "ERROR : apt-get update failed after ${attempts} attempts"
+            return 1
+        fi
+
+        echo "WARN : apt metadata is not valid yet, retrying in ${wait_seconds}s (attempt ${i}/${attempts})"
+        sleep "${wait_seconds}"
+        ((i++))
+    done
+
     $SUDO apt-get install -y --no-install-recommends \
         build-essential \
         cmake \

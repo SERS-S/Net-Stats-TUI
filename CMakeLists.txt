@@ -3,8 +3,17 @@ project(net_stats_tui LANGUAGES C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(net-stats src/main.c)
+file(GLOB SRC_DATA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/data/*.c")
+
+add_executable(net-stats
+    src/main.c
+    src/reactor.c
+    ${SRC_DATA_SOURCES}
+)
+
+target_include_directories(net-stats PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 find_package(PkgConfig QUIET)
 if(PkgConfig_FOUND)
