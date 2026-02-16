@@ -47,5 +47,5 @@
 ? Пока хз
 
 # Network Profiles
-- Просто парсим весь NetworkManager
+- Просто парсим весь NetworkManager (nmcli connection show)
 ? Пока хз
