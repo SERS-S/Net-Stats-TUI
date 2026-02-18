@@ -26,3 +26,7 @@ ARPRT ARPRT_get_data(ARPRT *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_arprt(){
+    mvprintw(6,2,"visualization of arp route in progress...");  
+};

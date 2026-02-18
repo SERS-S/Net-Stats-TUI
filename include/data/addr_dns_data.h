@@ -12,5 +12,6 @@ void ADDRDNS_init(ADDRDNS *e);
 void ADDRDNS_destroy(ADDRDNS *e);
 void ADDRDNS_update_data(ADDRDNS *e);
 ADDRDNS ADDRDNS_get_data(ADDRDNS *e);
+void draw_addrdns();
 
 #endif

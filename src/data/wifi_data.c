@@ -26,3 +26,7 @@ WIFI WIFI_get_data(WIFI *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_wifi(){
+    mvprintw(6,2,"visualization of wifi data in progress...");  
+}

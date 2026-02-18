@@ -26,3 +26,7 @@ INTRF INTRF_get_data(INTRF *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_intrf(){
+    mvprintw(6,2,"visualization of interfaces data in progress...");  
+};

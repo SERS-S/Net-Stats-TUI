@@ -12,5 +12,6 @@ void INTRF_init(INTRF *e);
 void INTRF_destroy(INTRF *e);
 void INTRF_update_data(INTRF *e);
 INTRF INTRF_get_data(INTRF *e);
+void draw_intrf();
 
 #endif

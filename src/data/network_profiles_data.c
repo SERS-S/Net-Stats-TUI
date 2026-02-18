@@ -26,3 +26,7 @@ NETPROF NETPROF_get_data(NETPROF *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_netprof(){
+    mvprintw(6,2,"visualization of network profiles in progress...");  
+};

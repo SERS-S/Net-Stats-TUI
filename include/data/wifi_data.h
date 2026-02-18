@@ -12,5 +12,6 @@ void WIFI_init(WIFI *e);
 void WIFI_destroy(WIFI *e);
 void WIFI_update_data(WIFI *e);
 WIFI WIFI_get_data(WIFI *e);
+void draw_wifi();
 
 #endif

@@ -26,3 +26,7 @@ PROTST PROTST_get_data(PROTST *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_protst(){
+    mvprintw(6,2,"visualization of protocol status in progress...");  
+};

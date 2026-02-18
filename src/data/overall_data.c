@@ -87,3 +87,7 @@ OVRLL OVRLL_get_data(OVRLL *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_ovrll(){
+  mvprintw(6,2,"visualization of overall in progress...");  
+};

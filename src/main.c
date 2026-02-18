@@ -40,6 +40,17 @@ static void draw_ui(
     erase();
     box(stdscr, 0, 0);
 
+    void (*TAB_DRAWERS[8])() = {
+        draw_ovrll,
+        draw_intrf,
+        draw_addrdns,
+        draw_arprt,
+        draw_consock,
+        draw_protst,
+        draw_wifi,
+        draw_netprof
+    };
+
     int x = 2;
     int y_tabs = 1;
     for (int i = 0; i < TAB_COUNT; i++) 
@@ -64,6 +75,7 @@ static void draw_ui(
 
     int y_status = rows - 2;
     mvhline(y_status - 1, 1, ACS_HLINE, cols - 2);
+    TAB_DRAWERS[active_tab]();
 
     attron(A_REVERSE);
     mvprintw(y_status, 2, "Tab Next | Shift+Tab Prev | s Sort | q Quit");

@@ -26,3 +26,7 @@ ADDRDNS ADDRDNS_get_data(ADDRDNS *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
+
+void draw_addrdns(){
+    mvprintw(6,2,"visualization of dns data in progress...");  
+};
