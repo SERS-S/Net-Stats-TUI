@@ -11,14 +11,14 @@
 #include "data/network_profiles_data.h"
 
 void event_loop(
-    OVRLL ovrll, 
-    INTRF intrf, 
-    ADDRDNS addrdns,
-    ARPRT arprt,
-    CONSOCK consock,
-    PROTST protst,
-    WIFI wifi,
-    NETPROF netprof
+    OVRLL *ovrll, 
+    INTRF *intrf, 
+    ADDRDNS *addrdns,
+    ARPRT *arprt,
+    CONSOCK *consock,
+    PROTST *protst,
+    WIFI *wifi,
+    NETPROF *netprof
 );
 
 

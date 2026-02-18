@@ -1,4 +1,5 @@
 #include <locale.h>
+#include <stdlib.h>
 #include <string.h>
 #include <curses.h>
 #include "reactor.h"
@@ -24,14 +25,14 @@ enum { TAB_COUNT = sizeof(TABS) / sizeof(TABS[0]) };
 
 static void draw_ui(
     int active_tab, 
-    OVRLL ovrll, 
-    INTRF intrf, 
-    ADDRDNS addrdns,
-    ARPRT arprt,
-    CONSOCK consock,
-    PROTST protst,
-    WIFI wifi,
-    NETPROF netprof
+    OVRLL *ovrll, 
+    INTRF *intrf, 
+    ADDRDNS *addrdns,
+    ARPRT *arprt,
+    CONSOCK *consock,
+    PROTST *protst,
+    WIFI *wifi,
+    NETPROF *netprof
 ) 
 {
     int rows, cols;
@@ -95,7 +96,7 @@ int main(void)
     WIFI_init(&wifi);
     NETPROF_init(&netprof);
 
-    event_loop(ovrll, intrf, addrdns, arprt, consock, protst, wifi, netprof);
+    event_loop(&ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
 
 
     setlocale(LC_ALL, "");
@@ -107,7 +108,7 @@ int main(void)
     curs_set(0);
 
     int active = 0;
-    draw_ui(active, ovrll, intrf, addrdns, arprt, consock, protst, wifi, netprof);
+    draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
 
     while (1) 
     {
@@ -118,16 +119,16 @@ int main(void)
         if (ch == '\t') 
         {
             active = (active + 1) % TAB_COUNT;
-            draw_ui(active, ovrll, intrf, addrdns, arprt, consock, protst, wifi, netprof);
+            draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
         } 
         else if (ch == KEY_BTAB) 
         { 
             active = (active - 1 + TAB_COUNT) % TAB_COUNT;
-            draw_ui(active, ovrll, intrf, addrdns, arprt, consock, protst, wifi, netprof);
+            draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
         } 
         else if (ch == KEY_RESIZE) 
         {
-            draw_ui(active, ovrll, intrf, addrdns, arprt, consock, protst, wifi, netprof);
+            draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
         }
     }
 
@@ -142,5 +143,5 @@ int main(void)
     INTRF_destroy(&intrf);
     OVRLL_destroy(&ovrll);
     
-    return 0;
+    exit(0);
 }
