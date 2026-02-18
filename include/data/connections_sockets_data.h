@@ -12,6 +12,5 @@ void CONSOCK_init(CONSOCK *e);
 void CONSOCK_destroy(CONSOCK *e);
 void CONSOCK_update_data(CONSOCK *e);
 CONSOCK CONSOCK_get_data(CONSOCK *e);
-void draw_consock();
 
 #endif

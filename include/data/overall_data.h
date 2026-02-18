@@ -48,6 +48,5 @@ void OVRLL_update_data(
     int new_retr_pkg
 );
 OVRLL OVRLL_get_data(OVRLL *e);
-void draw_ovrll();
 
 #endif

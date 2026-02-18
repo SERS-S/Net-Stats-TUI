@@ -27,6 +27,3 @@ ADDRDNS ADDRDNS_get_data(ADDRDNS *e)
     return new_e;
 }
 
-void draw_addrdns(){
-    mvprintw(6,2,"visualization of dns data in progress...");  
-};

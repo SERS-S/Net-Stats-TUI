@@ -13,6 +13,15 @@
 #include "data/wifi_data.h"
 #include "data/network_profiles_data.h"
 
+#include "draw/overall_draw.h"
+#include "draw/interfaces_draw.h"
+#include "draw/addr_dns_draw.h"
+#include "draw/arp_route_draw.h"
+#include "draw/connections_sockets_draw.h"
+#include "draw/protocol_stats_draw.h"
+#include "draw/wifi_draw.h"
+#include "draw/network_profiles_draw.h"
+
 static const char *TABS[] = 
 {
     "Overall", "Interfaces",

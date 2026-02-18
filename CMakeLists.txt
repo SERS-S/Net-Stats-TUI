@@ -5,12 +5,15 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB SRC_DATA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/data/*.c")
+file(GLOB SRC_DATA "${CMAKE_CURRENT_SOURCE_DIR}/src/data/*.c")
+file(GLOB SRC_DRAW "${CMAKE_CURRENT_SOURCE_DIR}/src/draw/*.c")
+
 
 add_executable(net-stats
     src/main.c
     src/reactor.c
-    ${SRC_DATA_SOURCES}
+    ${SRC_DATA}
+    ${SRC_DRAW}  
 )
 
 target_include_directories(net-stats PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

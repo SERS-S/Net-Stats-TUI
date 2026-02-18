@@ -12,6 +12,5 @@ void ARPRT_init(ARPRT *e);
 void ARPRT_destroy(ARPRT *e);
 void ARPRT_update_data(ARPRT *e);
 ARPRT ARPRT_get_data(ARPRT *e);
-void draw_arprt();
 
 #endif

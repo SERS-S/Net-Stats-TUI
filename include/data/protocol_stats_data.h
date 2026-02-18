@@ -12,6 +12,5 @@ void PROTST_init(PROTST *e);
 void PROTST_destroy(PROTST *e);
 void PROTST_update_data(PROTST *e);
 PROTST PROTST_get_data(PROTST *e);
-void draw_protst();
 
 #endif

@@ -27,6 +27,3 @@ INTRF INTRF_get_data(INTRF *e)
     return new_e;
 }
 
-void draw_intrf(){
-    mvprintw(6,2,"visualization of interfaces data in progress...");  
-};

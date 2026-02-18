@@ -26,7 +26,3 @@ CONSOCK CONSOCK_get_data(CONSOCK *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
-
-void draw_consock(){
-    mvprintw(6,2,"visualization of socket connections in progress...");  
-};

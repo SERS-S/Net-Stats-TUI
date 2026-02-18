@@ -27,6 +27,3 @@ ARPRT ARPRT_get_data(ARPRT *e)
     return new_e;
 }
 
-void draw_arprt(){
-    mvprintw(6,2,"visualization of arp route in progress...");  
-};

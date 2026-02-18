@@ -27,6 +27,4 @@ WIFI WIFI_get_data(WIFI *e)
     return new_e;
 }
 
-void draw_wifi(){
-    mvprintw(6,2,"visualization of wifi data in progress...");  
-}
+

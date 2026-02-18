@@ -12,6 +12,5 @@ void NETPROF_init(NETPROF *e);
 void NETPROF_destroy(NETPROF *e);
 void NETPROF_update_data(NETPROF *e);
 NETPROF NETPROF_get_data(NETPROF *e);
-void draw_netprof();
 
 #endif

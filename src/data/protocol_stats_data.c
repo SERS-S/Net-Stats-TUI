@@ -27,6 +27,3 @@ PROTST PROTST_get_data(PROTST *e)
     return new_e;
 }
 
-void draw_protst(){
-    mvprintw(6,2,"visualization of protocol status in progress...");  
-};

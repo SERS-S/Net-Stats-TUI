@@ -27,6 +27,3 @@ NETPROF NETPROF_get_data(NETPROF *e)
     return new_e;
 }
 
-void draw_netprof(){
-    mvprintw(6,2,"visualization of network profiles in progress...");  
-};
