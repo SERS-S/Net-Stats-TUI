@@ -1,6 +1,6 @@
 #ifndef ADDR_DNS_DRAW
 #define ADDR_DNS_DRAW
 
-void draw_addrdns();
+void draw_addrdns(void *);
 
 #endif

@@ -48,8 +48,9 @@ static void draw_ui(
     getmaxyx(stdscr, rows, cols);
     erase();
     box(stdscr, 0, 0);
+    typedef void (*tab_draw_fn) (void *);
 
-    void (*TAB_DRAWERS[8])() = {
+    tab_draw_fn TAB_DRAWERS[TAB_COUNT] = {
         draw_ovrll,
         draw_intrf,
         draw_addrdns,
@@ -59,6 +60,18 @@ static void draw_ui(
         draw_wifi,
         draw_netprof
     };
+
+    void *TAB_DATA[TAB_COUNT] = {
+        ovrll,
+        intrf,
+        addrdns,
+        arprt,
+        consock,
+        protst,
+        wifi,
+        netprof
+    };
+
 
     int x = 2;
     int y_tabs = 1;
@@ -84,7 +97,8 @@ static void draw_ui(
 
     int y_status = rows - 2;
     mvhline(y_status - 1, 1, ACS_HLINE, cols - 2);
-    TAB_DRAWERS[active_tab]();
+
+    TAB_DRAWERS[active_tab](TAB_DATA[active_tab]);
 
     attron(A_REVERSE);
     mvprintw(y_status, 2, "Tab Next | Shift+Tab Prev | s Sort | q Quit");

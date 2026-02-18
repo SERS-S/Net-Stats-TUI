@@ -1,6 +1,6 @@
 #ifndef INTERFACES_DRAW
 #define INTERFACES_DRAW
 
-void draw_intrf();
+void draw_intrf(void *);
 
 #endif

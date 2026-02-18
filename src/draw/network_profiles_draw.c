@@ -1,6 +1,6 @@
 #include "draw/network_profiles_draw.h"
 #include <curses.h>
 
-void draw_netprof(){
+void draw_netprof(void *ptr){
     mvprintw(6,2,"visualization of network profiles in progress...");  
 };
