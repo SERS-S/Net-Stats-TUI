@@ -20,9 +20,9 @@ void OVRLL_init(OVRLL *e)
     e->conn_tmw = 0;
     e->conn_systn = 0;
     e->conn_clsw = 0;
-    memset(e->rx_sparkline, 0, 15 * sizeof(int));
-    memset(e->tx_sparkline, 0, 15 * sizeof(int));
-    memset(e->retr_pkg_sparkline, 0, 15 * sizeof(int));
+    memset(e->rx_sparkline, 0, 15 * sizeof(float));
+    memset(e->tx_sparkline, 0, 15 * sizeof(float));
+    memset(e->retr_pkg_sparkline, 0, 15 * sizeof(float));
 }
 
 void OVRLL_destroy(OVRLL *e)
@@ -47,7 +47,7 @@ void OVRLL_update_data(
     int new_conn_tmw,
     int new_conn_systn,
     int new_conn_clsw,
-    int new_retr_pkg
+    float new_retr_pkg
 )
 {
     pthread_mutex_lock(&e->mtx);
@@ -87,4 +87,3 @@ OVRLL OVRLL_get_data(OVRLL *e)
     pthread_mutex_unlock(&e->mtx);
     return new_e;
 }
-

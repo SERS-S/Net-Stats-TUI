@@ -21,9 +21,9 @@ typedef struct overall_data
     int conn_tmw;
     int conn_systn;
     int conn_clsw;
-    int rx_sparkline[15];
-    int tx_sparkline[15];
-    int retr_pkg_sparkline[15];
+    float rx_sparkline[15];
+    float tx_sparkline[15];
+    float retr_pkg_sparkline[15];
 } OVRLL;
 
 void OVRLL_init(OVRLL *e);
@@ -45,7 +45,7 @@ void OVRLL_update_data(
     int new_conn_tmw,
     int new_conn_systn,
     int new_conn_clsw,
-    int new_retr_pkg
+    float new_retr_pkg
 );
 OVRLL OVRLL_get_data(OVRLL *e);
 
