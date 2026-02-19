@@ -169,6 +169,7 @@ int main(void)
         {
             draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
         }
+        else draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
     }
 
     endwin();
