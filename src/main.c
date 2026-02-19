@@ -48,7 +48,7 @@ static void draw_ui(
     getmaxyx(stdscr, rows, cols);
     erase();
     box(stdscr, 0, 0);
-    typedef void (*tab_draw_fn) (void *);
+    typedef void (*tab_draw_fn) (void *, int, int);
 
     tab_draw_fn TAB_DRAWERS[TAB_COUNT] = {
         draw_ovrll,
@@ -93,12 +93,16 @@ static void draw_ui(
     mvhline(y_sep, 1, ACS_HLINE, cols - 2);
 
     int y_content = y_sep + 2;
-    mvprintw(y_content, 2, "(контент активной вкладки: %s)", TABS[active_tab]);
+    int x_content = 2;
+
+    mvprintw(y_content, x_content, "(контент активной вкладки: %s)", TABS[active_tab]);
 
     int y_status = rows - 2;
     mvhline(y_status - 1, 1, ACS_HLINE, cols - 2);
 
-    TAB_DRAWERS[active_tab](TAB_DATA[active_tab]);
+    y_content += 2;
+
+    TAB_DRAWERS[active_tab](TAB_DATA[active_tab], y_content, x_content);
 
     attron(A_REVERSE);
     mvprintw(y_status, 2, "Tab Next | Shift+Tab Prev | s Sort | q Quit");
