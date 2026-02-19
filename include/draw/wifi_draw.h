@@ -1,6 +1,6 @@
 #ifndef WIFI_DRAW
 #define WIFI_DRAW
 
-void draw_wifi(void *);
+void draw_wifi(void *, int, int);
 
 #endif
