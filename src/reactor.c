@@ -68,6 +68,17 @@ static const char *tcp_state_name(uint8_t st)
     }
 }
 
+static void print_float_array(const char *name, const float *arr, size_t n)
+{
+    printf("%s=[", name);
+    for (size_t i = 0; i < n; ++i)
+    {
+        printf("%.3f", arr[i]);
+        if (i + 1 < n) printf(", ");
+    }
+    printf("]\n");
+}
+
 static int8_t scan_tcp_conn_list(TcpConnLst **tcl, size_t *sz)
 {
     if (tcl == NULL || sz == NULL) return 1;
@@ -547,6 +558,8 @@ static void* overall_event_update(void *arg)
 
         for (size_t i = 0; i < fct; ++i) free(D_NAMES[i]);
         free(D_NAMES);
+        // sleep(2);
+        // break;
     }
 
     return NULL;
