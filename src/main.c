@@ -146,6 +146,8 @@ int main(void)
     keypad(stdscr, TRUE);
     curs_set(0);
 
+    timeout(250);
+
     int active = 0;
     draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
 
@@ -158,17 +160,14 @@ int main(void)
         if (ch == '\t') 
         {
             active = (active + 1) % TAB_COUNT;
-            draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
         } 
         else if (ch == KEY_BTAB) 
         { 
             active = (active - 1 + TAB_COUNT) % TAB_COUNT;
-            draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
         } 
-        else if (ch == KEY_RESIZE) 
-        {
-            draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
-        }
+        draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
+        
+        
     }
 
     endwin();
