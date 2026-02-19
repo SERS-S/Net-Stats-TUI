@@ -380,6 +380,8 @@ static void* overall_event_update(void *arg)
         if (closedir(dir) != 0) perror("closedir(/sys/class/net)");
         if (ct == 0 || read_failed) fprintf(stderr, "interfaces reading failed\n");
 
+        // for (size_t i = 0; i < ct; ++i) printf("Interface: %s\n", D_NAMES[i]);
+
         /* Varify network interfaces for virtuality of origin  */
 
         size_t fct = 0;
@@ -401,6 +403,8 @@ static void* overall_event_update(void *arg)
                 free(D_NAMES[i]);
             }
         }
+
+        // for (size_t i = 0; i < fct; ++i) printf("Non-virtual interface: %s\n", D_NAMES[i]);
 
         /* Parsing interfaces network data  */
 
@@ -545,8 +549,39 @@ static void* overall_event_update(void *arg)
             );
         }
 
+        OVRLL tmp = OVRLL_get_data(ovrll);
+        printf(
+            "OVRLL: "
+            "rx_rate_kibs=%.3f rx_rate_kpps=%.3f "
+            "tx_rate_kibs=%.3f tx_rate_kpps=%.3f "
+            "rx_total_kibs=%.3f tx_total_kibs=%.3f "
+            "errors_rx=%d errors_tx=%d "
+            "drops_rx=%d drops_tx=%d "
+            "conn_estab=%d conn_lst=%d conn_tmw=%d conn_systn=%d conn_clsw=%d\n",
+            tmp.rx_rate_kibs,
+            tmp.rx_rate_kpps,
+            tmp.tx_rate_kibs,
+            tmp.tx_rate_kpps,
+            tmp.rx_total_kibs,
+            tmp.tx_total_kibs,
+            tmp.errors_rx,
+            tmp.errors_tx,
+            tmp.drops_rx,
+            tmp.drops_tx,
+            tmp.conn_estab,
+            tmp.conn_lst,
+            tmp.conn_tmw,
+            tmp.conn_systn,
+            tmp.conn_clsw
+        );
+        print_float_array("rx_sparkline", tmp.rx_sparkline, 15);
+        print_float_array("tx_sparkline", tmp.tx_sparkline, 15);
+        print_float_array("retr_pkg_sparkline", tmp.retr_pkg_sparkline, 15);
+
         for (size_t i = 0; i < fct; ++i) free(D_NAMES[i]);
         free(D_NAMES);
+        // sleep(2);
+        // break;
     }
 
     return NULL;
