@@ -7,11 +7,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(GLOB SRC_DATA "${CMAKE_CURRENT_SOURCE_DIR}/src/data/*.c")
 file(GLOB SRC_DRAW "${CMAKE_CURRENT_SOURCE_DIR}/src/draw/*.c")
-
+file(GLOB SRC_REACTOR "${CMAKE_CURRENT_SOURCE_DIR}/src/reactor/*.c")
 
 add_executable(net-stats
     src/main.c
-    src/reactor.c
+    ${SRC_REACTOR}
     ${SRC_DATA}
     ${SRC_DRAW}  
 )

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curses.h>
-#include "reactor.h"
+#include "reactor/reactor.h"
 
 #include "data/overall_data.h"
 #include "data/interfaces_data.h"

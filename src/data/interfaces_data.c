@@ -5,6 +5,7 @@
 void INTRF_init(INTRF *e)
 {
     pthread_mutex_init(&e->mtx, NULL);
+    e->count = 0;
     e->active_intef_ct = 0;
     e->device_name = NULL;
     e->device_type = NULL;
@@ -14,10 +15,10 @@ void INTRF_init(INTRF *e)
     e->rx_rate_kibs = NULL;
     e->mtu_interf = NULL;
     e->mac_address = NULL;
-    for (int i = 0; i < 4; ++i) e->ipv4_address[i] = NULL;
-    for (int i = 0; i < 16; ++i) e->ipv6_address[i] = NULL;
-    for (int i = 0; i < 4; ++i) e->gw_ipv4_address[i] = NULL;
-    for (int i = 0; i < 16; ++i) e->gw_ipv6_address[i] = NULL;
+    e->ipv4_address = NULL;
+    e->ipv6_address = NULL;
+    e->gw_ipv4_address = NULL;
+    e->gw_ipv6_address = NULL;
     e->rx_total_bytes = NULL;
     e->rx_total_packs = NULL;
     e->rx_total_drops = NULL;
@@ -27,7 +28,7 @@ void INTRF_init(INTRF *e)
     e->tx_total_drops = NULL;
     e->tx_total_errors = NULL;
     e->device_link = NULL;
-    for (int i = 0; i < 4; ++i) e->duplex_mode[i] = NULL;
+    e->duplex_mode = NULL;
     e->operstate_mode = NULL;
 }
 
@@ -38,19 +39,20 @@ void INTRF_destroy(INTRF *e)
 
 void INTRF_update_data(
     INTRF *e,
+    int new_count,
     int new_active_intef_ct,
     char **new_device_name,
     char **new_device_type,
-    bool *new_active_status,
+    char *new_active_status,
     char **new_conn_name,
     float *new_tx_rate_kibs,
     float *new_rx_rate_kibs,
     int32_t *new_mtu_interf,
-    uint8_t **new_mac_address,
-    uint8_t *new_ipv4_address[4],
-    uint8_t *new_ipv6_address[16],
-    uint8_t *new_gw_ipv4_address[4],
-    uint8_t *new_gw_ipv6_address[16],
+    uint8_t (*new_mac_address)[6],
+    uint8_t (*new_ipv4_address)[4],
+    uint8_t (*new_ipv6_address)[16],
+    uint8_t (*new_gw_ipv4_address)[4],
+    uint8_t (*new_gw_ipv6_address)[16],
     int *new_rx_total_bytes,
     int *new_rx_total_packs,
     int *new_rx_total_drops,
@@ -60,11 +62,12 @@ void INTRF_update_data(
     int *new_tx_total_drops,
     int *new_tx_total_errors,
     int *new_device_link,
-    char *new_duplex_mode[4],
+    char (*new_duplex_mode)[16],
     char **new_operstate_mode
 )
 {
     pthread_mutex_lock(&e->mtx);
+    e->count = new_count;
     e->active_intef_ct = new_active_intef_ct;
     e->device_name = new_device_name;
     e->device_type = new_device_type;
@@ -74,10 +77,10 @@ void INTRF_update_data(
     e->rx_rate_kibs = new_rx_rate_kibs;
     e->mtu_interf = new_mtu_interf;
     e->mac_address = new_mac_address;
-    for (int i = 0; i < 4; ++i) e->ipv4_address[i] = new_ipv4_address[i];
-    for (int i = 0; i < 16; ++i) e->ipv6_address[i] = new_ipv6_address[i];
-    for (int i = 0; i < 4; ++i) e->gw_ipv4_address[i] = new_gw_ipv4_address[i];
-    for (int i = 0; i < 16; ++i) e->gw_ipv6_address[i] = new_gw_ipv6_address[i];
+    e->ipv4_address = new_ipv4_address;
+    e->ipv6_address = new_ipv6_address;
+    e->gw_ipv4_address = new_gw_ipv4_address;
+    e->gw_ipv6_address = new_gw_ipv6_address;
     e->rx_total_bytes = new_rx_total_bytes;
     e->rx_total_packs = new_rx_total_packs;
     e->rx_total_drops = new_rx_total_drops;
@@ -87,7 +90,7 @@ void INTRF_update_data(
     e->tx_total_drops = new_tx_total_drops;
     e->tx_total_errors = new_tx_total_errors;
     e->device_link = new_device_link;
-    for (int i = 0; i < 4; ++i) e->duplex_mode[i] = new_duplex_mode[i];
+    e->duplex_mode = new_duplex_mode;
     e->operstate_mode = new_operstate_mode;
     pthread_mutex_unlock(&e->mtx);
 }

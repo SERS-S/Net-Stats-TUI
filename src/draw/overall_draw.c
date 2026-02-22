@@ -3,6 +3,7 @@
 #include <curses.h>
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
+static void draw_sparkline(int y, int x, const float *data, int count);
 
 void draw_ovrll(void *ptr, int y, int x){
     OVRLL snapshot = OVRLL_get_data(ptr);
@@ -42,13 +43,13 @@ void draw_ovrll(void *ptr, int y, int x){
     );
 
     snprintf(
-        rx_total, sizeof(rx_rate), 
+        rx_total, sizeof(rx_total), 
         "RX total: %s", 
         rx_total_buffer
     );
 
     snprintf(
-        tx_total, sizeof(tx_rate), 
+        tx_total, sizeof(tx_total), 
         "TX total: %s", 
         tx_total_buffer
     );
@@ -113,7 +114,7 @@ void format_rate(char *buffer, int buffer_size, double kib_speed) {
 
 
 
-void draw_sparkline(int y, int x, const float *data, int count) {
+static void draw_sparkline(int y, int x, const float *data, int count) {
     if (!data || count <= 0) return;
 
     mvprintw(y, x++, "[");

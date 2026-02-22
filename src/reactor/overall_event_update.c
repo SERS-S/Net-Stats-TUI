@@ -1,24 +1,16 @@
-#include <pthread.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdint.h>
 #include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
 #include <limits.h>
+#include <errno.h>
+#include <dirent.h>
 
-#include "reactor.h"
+#include "reactor/overall_event_update.h"
 
 #include "data/overall_data.h"
-#include "data/interfaces_data.h"
-#include "data/addr_dns_data.h"
-#include "data/arp_route_data.h"
-#include "data/connections_sockets_data.h"
-#include "data/protocol_stats_data.h"
-#include "data/wifi_data.h"
-#include "data/network_profiles_data.h"
 
 typedef struct tcp_connection_list
 {
@@ -272,7 +264,7 @@ uint64_t read_net_stats(const char *interf_name, const char *direction, const ch
     if (strcmp(direction, "rx") != 0 && strcmp(direction, "tx") != 0) return UINT64_MAX;
     if (*metric == '\0' || strchr(metric, '/')) return UINT64_MAX;
 
-    for (const unsigned char *p = (const unsigned char *)metric; *p != '\0'; ++p)
+    for (const unsigned char *p = (const unsigned char *) metric; *p != '\0'; ++p)
     {
         if (!(isalnum(*p) || *p == '_')) return UINT64_MAX;
     }
@@ -285,7 +277,7 @@ uint64_t read_net_stats(const char *interf_name, const char *direction, const ch
         direction,
         metric
     );
-    if (path_len < 0 || path_len >= (int)sizeof(path))
+    if (path_len < 0 || path_len >= (int) sizeof(path))
     {
         return UINT64_MAX;
     }
@@ -326,12 +318,7 @@ static int8_t is_virtual_interface(const char *name)
     return (strncmp(resolver, virt_prefix, strlen(virt_prefix)) == 0) ? 1 : 0;
 }
 
-static void log_thread_error(const char *section, int rc)
-{
-    fprintf(stderr, "%s section thread error: %s\n", section, strerror(rc));
-}
-
-static void* overall_event_update(void *arg)
+void* overall_event_update(void *arg)
 {
     OVRLL *ovrll = (OVRLL*) arg;
 
@@ -415,126 +402,172 @@ static void* overall_event_update(void *arg)
 
         /* Parsing interfaces network data  */
 
-        for (size_t i = 0; i < fct; ++i)
+        float rx_rate_kibs = 0.0f;
+        float rx_rate_kpps = 0.0f;
+        float tx_rate_kibs = 0.0f;
+        float tx_rate_kpps = 0.0f;
+        float rx_total_kibs = 0.0f;
+        float tx_total_kibs = 0.0f;
+        int errors_rx = 0;
+        int errors_tx = 0;
+        int drops_rx = 0;
+        int drops_tx = 0;
+        int conn_estab = 0;
+        int conn_lst = 0;
+        int conn_tmw = 0;
+        int conn_systn = 0;
+        int conn_clsw = 0;
+        int retr_pkg = 0;
+        int parse_failed = 0;
+
+        uint8_t interval_sec = 1;
+
+        uint64_t *rx_bytes_t1 = NULL;
+        uint64_t *rx_packs_t1 = NULL;
+        uint64_t *tx_bytes_t1 = NULL;
+        uint64_t *tx_packs_t1 = NULL;
+        if (fct > 0)
         {
-            float rx_rate_kibs;
-            float rx_rate_kpps;
-            float tx_rate_kibs;
-            float tx_rate_kpps;
-            float rx_total_kibs;
-            float tx_total_kibs;
-            int errors_rx;
-            int errors_tx;
-            int drops_rx;
-            int drops_tx;
-            int conn_estab;
-            int conn_lst;
-            int conn_tmw;
-            int conn_systn;
-            int conn_clsw;
-            int retr_pkg;
-
-            uint8_t interval_sec = 1;
-
-            uint64_t rx_bytes_t1 = read_net_stats(D_NAMES[i], "rx", "bytes");
-            uint64_t rx_packs_t1 = read_net_stats(D_NAMES[i], "rx", "packets");
-            if (rx_bytes_t1 == UINT64_MAX || rx_packs_t1 == UINT64_MAX)
+            rx_bytes_t1 = calloc(fct, sizeof(*rx_bytes_t1));
+            rx_packs_t1 = calloc(fct, sizeof(*rx_packs_t1));
+            tx_bytes_t1 = calloc(fct, sizeof(*tx_bytes_t1));
+            tx_packs_t1 = calloc(fct, sizeof(*tx_packs_t1));
+            if (!rx_bytes_t1 || !rx_packs_t1 || !tx_bytes_t1 || !tx_packs_t1)
             {
-                perror("read_net_stats(rx bytes|packets) t1 error");
-                break;
+                perror("calloc(overall_event_update t1)");
+                parse_failed = 1;
             }
-            uint64_t tx_bytes_t1 = read_net_stats(D_NAMES[i], "tx", "bytes");
-            uint64_t tx_packs_t1 = read_net_stats(D_NAMES[i], "tx", "packets");
-            if (tx_bytes_t1 == UINT64_MAX || tx_packs_t1 == UINT64_MAX)
+        }
+
+        if (!parse_failed && fct > 0)
+        {
+            for (size_t i = 0; i < fct; ++i)
             {
-                perror("read_net_stats(tx bytes|packets) t1 error");
-                break;
+                rx_bytes_t1[i] = read_net_stats(D_NAMES[i], "rx", "bytes");
+                rx_packs_t1[i] = read_net_stats(D_NAMES[i], "rx", "packets");
+                tx_bytes_t1[i] = read_net_stats(D_NAMES[i], "tx", "bytes");
+                tx_packs_t1[i] = read_net_stats(D_NAMES[i], "tx", "packets");
+                if (
+                    rx_bytes_t1[i] == UINT64_MAX || rx_packs_t1[i] == UINT64_MAX ||
+                    tx_bytes_t1[i] == UINT64_MAX || tx_packs_t1[i] == UINT64_MAX
+                )
+                {
+                    perror("read_net_stats(bytes|packets) t1 error");
+                    parse_failed = 1;
+                    break;
+                }
             }
+        }
 
-            sleep(interval_sec);
+        if (!parse_failed) sleep(interval_sec);
 
-            uint64_t rx_bytes_t2 = read_net_stats(D_NAMES[i], "rx", "bytes");
-            uint64_t rx_packs_t2 = read_net_stats(D_NAMES[i], "rx", "packets");
-            if (rx_bytes_t2 == UINT64_MAX || rx_packs_t2 == UINT64_MAX)
+        if (!parse_failed && fct > 0)
+        {
+            for (size_t i = 0; i < fct; ++i)
             {
-                perror("read_net_stats(rx bytes|packets) t2 error");
-                break;
+                uint64_t rx_bytes_t2 = read_net_stats(D_NAMES[i], "rx", "bytes");
+                uint64_t rx_packs_t2 = read_net_stats(D_NAMES[i], "rx", "packets");
+                uint64_t tx_bytes_t2 = read_net_stats(D_NAMES[i], "tx", "bytes");
+                uint64_t tx_packs_t2 = read_net_stats(D_NAMES[i], "tx", "packets");
+                if (
+                    rx_bytes_t2 == UINT64_MAX || rx_packs_t2 == UINT64_MAX ||
+                    tx_bytes_t2 == UINT64_MAX || tx_packs_t2 == UINT64_MAX
+                )
+                {
+                    perror("read_net_stats(bytes|packets) t2 error");
+                    parse_failed = 1;
+                    break;
+                }
+
+                uint64_t rx_errors = read_net_stats(D_NAMES[i], "rx", "errors");
+                uint64_t tx_errors = read_net_stats(D_NAMES[i], "tx", "errors");
+                uint64_t rx_dropped = read_net_stats(D_NAMES[i], "rx", "dropped");
+                uint64_t tx_dropped = read_net_stats(D_NAMES[i], "tx", "dropped");
+                if (
+                    rx_errors == UINT64_MAX || tx_errors == UINT64_MAX ||
+                    rx_dropped == UINT64_MAX || tx_dropped == UINT64_MAX
+                )
+                {
+                    perror("read_net_stats(errors|dropped) error");
+                    parse_failed = 1;
+                    break;
+                }
+
+                uint64_t rx_bytes_delta = (rx_bytes_t2 >= rx_bytes_t1[i]) ? (rx_bytes_t2 - rx_bytes_t1[i]) : 0;
+                uint64_t rx_packs_delta = (rx_packs_t2 >= rx_packs_t1[i]) ? (rx_packs_t2 - rx_packs_t1[i]) : 0;
+                uint64_t tx_bytes_delta = (tx_bytes_t2 >= tx_bytes_t1[i]) ? (tx_bytes_t2 - tx_bytes_t1[i]) : 0;
+                uint64_t tx_packs_delta = (tx_packs_t2 >= tx_packs_t1[i]) ? (tx_packs_t2 - tx_packs_t1[i]) : 0;
+
+                rx_rate_kibs += (float) (rx_bytes_delta / interval_sec / 1024.0);
+                rx_rate_kpps += (float) (rx_packs_delta / interval_sec / 1000.0);
+                tx_rate_kibs += (float) (tx_bytes_delta / interval_sec / 1024.0);
+                tx_rate_kpps += (float) (tx_packs_delta / interval_sec / 1000.0);
+
+                rx_total_kibs += (float) (rx_bytes_t2 / 1024.0);
+                tx_total_kibs += (float) (tx_bytes_t2 / 1024.0);
+
+                errors_rx += (int) rx_errors;
+                errors_tx += (int) tx_errors;
+                drops_rx += (int) rx_dropped;
+                drops_tx += (int) tx_dropped;
             }
-            uint64_t tx_bytes_t2 = read_net_stats(D_NAMES[i], "tx", "bytes");
-            uint64_t tx_packs_t2 = read_net_stats(D_NAMES[i], "tx", "packets");
-            if (tx_bytes_t2 == UINT64_MAX || tx_packs_t2 == UINT64_MAX)
-            {
-                perror("read_net_stats(tx bytes|packets) t2 error");
-                break;
-            }
+        }
 
-            rx_rate_kibs = (float) ((rx_bytes_t2 - rx_bytes_t1) / interval_sec / 1024.0);
-            rx_rate_kpps = (float) ((rx_packs_t2 - rx_packs_t1) / interval_sec / 1000.0);
+        free(rx_bytes_t1);
+        free(rx_packs_t1);
+        free(tx_bytes_t1);
+        free(tx_packs_t1);
 
-            tx_rate_kibs = (float) ((tx_bytes_t2 - tx_bytes_t1) / interval_sec / 1024.0);
-            tx_rate_kpps = (float) ((tx_packs_t2 - tx_packs_t1) / interval_sec / 1000.0);
-            
-            rx_total_kibs = (float) (rx_bytes_t2 / 1024.0);
-            tx_total_kibs = (float) (tx_bytes_t2 / 1024.0);
-
-            uint64_t rx_errors = read_net_stats(D_NAMES[i], "rx", "errors");
-            uint64_t tx_errors = read_net_stats(D_NAMES[i], "tx", "errors");
-
-            errors_rx = (int) rx_errors;
-            errors_tx = (int) tx_errors;
-
-            uint64_t rx_dropped = read_net_stats(D_NAMES[i], "rx", "dropped");
-            uint64_t tx_dropped = read_net_stats(D_NAMES[i], "tx", "dropped");
-
-            drops_rx = (int) rx_dropped;
-            drops_tx = (int) tx_dropped;
-
+        if (!parse_failed)
+        {
             TcpConnLst *tcl = NULL;
             size_t sz = 0;
             if (scan_tcp_conn_list(&tcl, &sz) != 0)
             {
                 perror("scan_tcp_conn_list error");
-                break;
+                parse_failed = 1;
             }
-
-            conn_estab = 0;
-            conn_lst = 0;
-            conn_tmw = 0;
-            conn_systn = 0;
-            conn_clsw = 0;
-            retr_pkg = 0;
-            for (size_t j = 0; j < sz; ++j)
+            else
             {
-                if (strcmp(tcl[j].state, "ESTABLISHED") == 0) conn_estab++;
-                else if (strcmp(tcl[j].state, "LISTEN") == 0) conn_lst++;
-                else if (strcmp(tcl[j].state, "TIME_WAIT") == 0) conn_tmw++;
-                else if (strcmp(tcl[j].state, "SYN_SENT") == 0) conn_systn++;
-                else if (strcmp(tcl[j].state, "CLOSE_WAIT") == 0) conn_clsw++;
-                retr_pkg += (int) tcl[j].retrnsmt;
+                for (size_t j = 0; j < sz; ++j)
+                {
+                    if (strcmp(tcl[j].state, "ESTABLISHED") == 0) conn_estab++;
+                    else if (strcmp(tcl[j].state, "LISTEN") == 0) conn_lst++;
+                    else if (strcmp(tcl[j].state, "TIME_WAIT") == 0) conn_tmw++;
+                    else if (strcmp(tcl[j].state, "SYN_SENT") == 0) conn_systn++;
+                    else if (strcmp(tcl[j].state, "CLOSE_WAIT") == 0) conn_clsw++;
+                    retr_pkg += (int) tcl[j].retrnsmt;
+                }
             }
-
             free(tcl);
+        }
 
+        if (!parse_failed)
+        {
             TcpConnLst *tcl6 = NULL;
             size_t sz6 = 0;
             if (scan_tcp6_conn_list(&tcl6, &sz6) != 0)
             {
                 perror("scan_tcp6_conn_list error");
-                break;
+                parse_failed = 1;
             }
-
-            for (size_t j = 0; j < sz6; ++j)
+            else
             {
-                if (strcmp(tcl6[j].state, "ESTABLISHED") == 0) conn_estab++;
-                else if (strcmp(tcl6[j].state, "LISTEN") == 0) conn_lst++;
-                else if (strcmp(tcl6[j].state, "TIME_WAIT") == 0) conn_tmw++;
-                else if (strcmp(tcl6[j].state, "SYN_SENT") == 0) conn_systn++;
-                else if (strcmp(tcl6[j].state, "CLOSE_WAIT") == 0) conn_clsw++;
-                retr_pkg += (int) tcl6[j].retrnsmt;
+                for (size_t j = 0; j < sz6; ++j)
+                {
+                    if (strcmp(tcl6[j].state, "ESTABLISHED") == 0) conn_estab++;
+                    else if (strcmp(tcl6[j].state, "LISTEN") == 0) conn_lst++;
+                    else if (strcmp(tcl6[j].state, "TIME_WAIT") == 0) conn_tmw++;
+                    else if (strcmp(tcl6[j].state, "SYN_SENT") == 0) conn_systn++;
+                    else if (strcmp(tcl6[j].state, "CLOSE_WAIT") == 0) conn_clsw++;
+                    retr_pkg += (int) tcl6[j].retrnsmt;
+                }
             }
-
             free(tcl6);
+        }
 
+        if (!parse_failed)
+        {
             OVRLL_update_data(
                 ovrll, 
                 rx_rate_kibs, 
@@ -563,143 +596,4 @@ static void* overall_event_update(void *arg)
     }
 
     return NULL;
-}
-
-static void* interfaces_event_update(void *arg)
-{
-    INTRF *intrf = (INTRF *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-static void* addr_dns_event_update(void *arg)
-{
-    ADDRDNS *addrdns = (ADDRDNS *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-static void* arp_route_event_update(void *arg)
-{
-    ARPRT *arprt = (ARPRT *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-static void* connections_sockets_event_update(void *arg)
-{
-    CONSOCK *consock = (CONSOCK *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-static void* protocol_stats_event_update(void *arg)
-{
-    PROTST *protst = (PROTST *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-static void* wifi_event_update(void *arg)
-{
-    WIFI *wifi = (WIFI *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-static void* network_profiles_event_update(void *arg)
-{
-    NETPROF *netprof = (NETPROF *) arg;
-
-    while (1)
-    {
-        
-    }
-
-    return NULL;
-}
-
-void event_loop(
-    OVRLL *ovrll,
-    INTRF *intrf,
-    ADDRDNS *addrdns,
-    ARPRT *arprt,
-    CONSOCK *consock,
-    PROTST *protst,
-    WIFI *wifi,
-    NETPROF *netprof
-)
-{
-    pthread_t ovrll_t;
-    pthread_t intrf_t;
-    pthread_t addrdns_t;
-    pthread_t arprt_t;
-    pthread_t consock_t;
-    pthread_t protst_t;
-    pthread_t wifi_t;
-    pthread_t netprof_t;
-
-    int ovrll_rc = pthread_create(&ovrll_t, NULL, overall_event_update, ovrll);
-    if (ovrll_rc != 0) log_thread_error("overall", ovrll_rc);
-    else pthread_detach(ovrll_t);
-
-    int intrf_rc = pthread_create(&intrf_t, NULL, interfaces_event_update, intrf);
-    if (intrf_rc != 0) log_thread_error("interfaces", intrf_rc);
-    else pthread_detach(intrf_t);
-
-    int addrdns_rc = pthread_create(&addrdns_t, NULL, addr_dns_event_update, addrdns);
-    if (addrdns_rc != 0) log_thread_error("addr_dns", addrdns_rc);
-    else pthread_detach(addrdns_t);
-
-    int arprt_rc = pthread_create(&arprt_t, NULL, arp_route_event_update, arprt);
-    if (arprt_rc != 0) log_thread_error("arp_route", arprt_rc);
-    else pthread_detach(arprt_t);
-
-    int consock_rc = pthread_create(&consock_t, NULL, connections_sockets_event_update, consock);
-    if (consock_rc != 0) log_thread_error("connections_sockets", consock_rc);
-    else pthread_detach(consock_t);
-
-    int protst_rc = pthread_create(&protst_t, NULL, protocol_stats_event_update, protst);
-    if (protst_rc != 0) log_thread_error("protocol_stats", protst_rc);
-    else pthread_detach(protst_t);
-
-    int wifi_rc = pthread_create(&wifi_t, NULL, wifi_event_update, wifi);
-    if (wifi_rc != 0) log_thread_error("wifi", wifi_rc);
-    else pthread_detach(wifi_t);
-
-    int netprof_rc = pthread_create(&netprof_t, NULL, network_profiles_event_update, netprof);
-    if (netprof_rc != 0) log_thread_error("network_profiles", netprof_rc);
-    else pthread_detach(netprof_t);
-
-    return;
 }
