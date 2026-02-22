@@ -146,7 +146,7 @@ int main(void)
     keypad(stdscr, TRUE);
     curs_set(0);
 
-    timeout(250);
+    timeout(1);
 
     int active = 0;
     draw_ui(active, &ovrll, &intrf, &addrdns, &arprt, &consock, &protst, &wifi, &netprof);
