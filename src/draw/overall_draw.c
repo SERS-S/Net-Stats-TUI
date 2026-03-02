@@ -1,13 +1,17 @@
 #include "draw/overall_draw.h"
 #include "data/overall_data.h"
 #include <curses.h>
+#include <string.h>
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static void draw_sparkline(int y, int x, const float *data, int count);
+static void print_data(const char*, int);
 
 void draw_ovrll(void *ptr, int y, int x){
     OVRLL snapshot = OVRLL_get_data(ptr);
     int x_starter = x;
+    wmove(stdscr,y, x_starter);
 
     char rx_rate[64];
     char rx_rate_buffer[16];
@@ -78,28 +82,22 @@ void draw_ovrll(void *ptr, int y, int x){
         snapshot.conn_clsw
     );
 
-    mvprintw( y, x_starter, "%s", rx_rate); 
-    getyx(stdscr, y, x);
-    mvprintw( y, x + 2, "%s", tx_rate);
-    y += 1;
-    mvprintw( y, x_starter, "%s" ,rx_total);
-    mvprintw( y, x + 2, "%s", tx_total);
-    y += 1;
-    mvprintw( y, x_starter, "%s", errors);
-    mvprintw( y, x + 2,  "%s", drops);
-    y += 2;
-    mvprintw( y, x_starter, "%s", connections);
-    y += 5;
-    mvprintw( y, x_starter, "RX");
+    print_data(rx_rate, 1); 
+    print_data(tx_rate, 2);
+    print_data(rx_total, 1);
+    print_data(tx_total, 2);
+    print_data(errors, 1);
+    print_data(drops, 2);
+    print_data(connections, 1);
+    print_data("RX", 1);
+    getyx(stdscr, y, x_starter);
     draw_sparkline(y, x_starter + 3, snapshot.rx_sparkline, 8);
-    getyx(stdscr, y, x);
-    mvprintw( y, x + 2, "TX");
-    draw_sparkline(y, x + 5, snapshot.tx_sparkline, 8);
-    getyx(stdscr, y, x);
-    mvprintw( y, x + 2, "Retrans/s");
-    getyx(stdscr, y, x);
-    draw_sparkline(y, x + 1, snapshot.retr_pkg_sparkline, 8);
-
+    print_data("TX", 2);
+    getyx(stdscr, y, x_starter);
+    draw_sparkline(y, x_starter + 3, snapshot.tx_sparkline, 8);
+    print_data("Retrans/s", 1);
+    getyx(stdscr, y, x_starter);
+    draw_sparkline(y, x_starter + 3, snapshot.retr_pkg_sparkline, 8);
 };
 
 void format_rate(char *buffer, int buffer_size, double kib_speed) {
@@ -116,7 +114,13 @@ void format_rate(char *buffer, int buffer_size, double kib_speed) {
 
 static void draw_sparkline(int y, int x, const float *data, int count) {
     if (!data || count <= 0) return;
-
+    int h = getmaxy(stdscr);
+    int current_y;
+    int current_x;
+    getyx(stdscr, current_y, current_x);
+    if(current_y >= h -4){
+        return;
+    }
     mvprintw(y, x++, "[");
 
     static const char *bars[7] = {"▁","▂","▃","▄","▅","▆","▇"};
@@ -142,4 +146,27 @@ static void draw_sparkline(int y, int x, const float *data, int count) {
     }
     getyx(stdscr, y, x);
     mvprintw(y, ++x, "]");
+}
+
+static void print_data(const char* data, int type){
+    int h = getmaxy(stdscr);
+    int l = getmaxx(stdscr);
+    int rows = 5;
+    int skip_rows = MAX((h - 4 - rows)/10, 2);
+    int skip_table = MIN(10, l - 40);
+    int y;
+    int x;
+    int len = strlen(data);
+    getyx(stdscr, y, x);
+    if(type ==1){
+        y += skip_rows;
+        x = 2;
+    }else{
+        x = 33 + skip_table;
+    }
+    if(y >= h - 4||  len >= l - x){
+        wmove(stdscr,y + skip_rows, 2);
+        return;
+    };
+    mvprintw(y, x, "%s", data);
 }
