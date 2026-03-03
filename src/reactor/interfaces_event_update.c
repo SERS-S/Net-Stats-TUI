@@ -588,7 +588,6 @@ void* interfaces_event_update(void *arg)
 
     while (1)
     {
-
         /* Get network interfaces list */
 
         const char *path = "/sys/class/net";
@@ -644,7 +643,7 @@ void* interfaces_event_update(void *arg)
 
         int count = (int) ct;
         const size_t active_status_slot = 16;
-        int active_intef_ct = 0;
+        int active_interf_ct = 0;
         int parse_failed = 0;
         uint8_t interval_sec = 1;
 
@@ -816,7 +815,7 @@ void* interfaces_event_update(void *arg)
                 snprintf(status, active_status_slot, "%s", status_label);
                 if (strcmp(status_label, "UP") == 0)
                 {
-                    ++active_intef_ct;
+                    ++active_interf_ct;
                 }
 
                 /* conn_name field */
@@ -905,7 +904,7 @@ void* interfaces_event_update(void *arg)
             INTRF_update_data(
                 intrf,
                 count,
-                active_intef_ct,
+                active_interf_ct,
                 device_name,
                 device_type,
                 active_status,

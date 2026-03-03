@@ -8,7 +8,7 @@ typedef struct interfaces_data
 {
     pthread_mutex_t mtx;
     int count;
-    int active_intef_ct;
+    int active_interf_ct;
     char **device_name;
     char **device_type;
     char *active_status; // active_status_slot = 16 (каждые 16 бит следующее слово)
@@ -39,7 +39,7 @@ void INTRF_destroy(INTRF *e);
 void INTRF_update_data(
     INTRF *e,
     int new_count,
-    int new_active_intef_ct,
+    int new_active_interf_ct,
     char **new_device_name,
     char **new_device_type,
     char *new_active_status,

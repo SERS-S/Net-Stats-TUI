@@ -6,7 +6,7 @@ void INTRF_init(INTRF *e)
 {
     pthread_mutex_init(&e->mtx, NULL);
     e->count = 0;
-    e->active_intef_ct = 0;
+    e->active_interf_ct = 0;
     e->device_name = NULL;
     e->device_type = NULL;
     e->active_status = NULL;
@@ -40,7 +40,7 @@ void INTRF_destroy(INTRF *e)
 void INTRF_update_data(
     INTRF *e,
     int new_count,
-    int new_active_intef_ct,
+    int new_active_interf_ct,
     char **new_device_name,
     char **new_device_type,
     char *new_active_status,
@@ -68,7 +68,7 @@ void INTRF_update_data(
 {
     pthread_mutex_lock(&e->mtx);
     e->count = new_count;
-    e->active_intef_ct = new_active_intef_ct;
+    e->active_interf_ct = new_active_interf_ct;
     e->device_name = new_device_name;
     e->device_type = new_device_type;
     e->active_status = new_active_status;
