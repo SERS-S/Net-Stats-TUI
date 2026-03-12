@@ -1,6 +1,7 @@
 #include "data/addr_dns_data.h"
 #include <pthread.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 void ADDRDNS_init(ADDRDNS *e)
 {
@@ -19,6 +20,32 @@ void ADDRDNS_init(ADDRDNS *e)
 
 void ADDRDNS_destroy(ADDRDNS *e)
 {
+    pthread_mutex_lock(&e->mtx);
+    if (e->interf_name != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->interf_name[i]);
+        free(e->interf_name);
+    }
+    free(e->ipv4_address);
+    free(e->ipv4_mask);
+    free(e->ipv6_address);
+    free(e->ipv6_mask);
+    free(e->manager);
+    free(e->servers_list);
+    free(e->search_list);
+    free(e->resolv_path);
+
+    e->count = 0;
+    e->interf_name = NULL;
+    e->ipv4_address = NULL;
+    e->ipv4_mask = NULL;
+    e->ipv6_address = NULL;
+    e->ipv6_mask = NULL;
+    e->manager = NULL;
+    e->servers_list = NULL;
+    e->search_list = NULL;
+    e->resolv_path = NULL;
+    pthread_mutex_unlock(&e->mtx);
     pthread_mutex_destroy(&e->mtx);
 }
 
@@ -37,6 +64,31 @@ void ADDRDNS_update_data(
 )
 {
     pthread_mutex_lock(&e->mtx);
+    if (e->interf_name != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->interf_name[i]);
+        free(e->interf_name);
+    }
+    free(e->ipv4_address);
+    free(e->ipv4_mask);
+    free(e->ipv6_address);
+    free(e->ipv6_mask);
+    free(e->manager);
+    free(e->servers_list);
+    free(e->search_list);
+    free(e->resolv_path);
+
+    e->count = 0;
+    e->interf_name = NULL;
+    e->ipv4_address = NULL;
+    e->ipv4_mask = NULL;
+    e->ipv6_address = NULL;
+    e->ipv6_mask = NULL;
+    e->manager = NULL;
+    e->servers_list = NULL;
+    e->search_list = NULL;
+    e->resolv_path = NULL;
+
     e->count = new_count;
     e->interf_name = new_interf_name;
     e->ipv4_address = new_ipv4_address;

@@ -1,6 +1,7 @@
 #include "data/interfaces_data.h"
 #include <pthread.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 void INTRF_init(INTRF *e)
 {
@@ -34,6 +35,74 @@ void INTRF_init(INTRF *e)
 
 void INTRF_destroy(INTRF *e)
 {
+    pthread_mutex_lock(&e->mtx);
+    if (e->device_name != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->device_name[i]);
+        free(e->device_name);
+    }
+    if (e->device_type != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->device_type[i]);
+        free(e->device_type);
+    }
+    if (e->conn_name != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->conn_name[i]);
+        free(e->conn_name);
+    }
+    if (e->operstate_mode != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->operstate_mode[i]);
+        free(e->operstate_mode);
+    }
+
+    free(e->active_status);
+    free(e->tx_rate_kibs);
+    free(e->rx_rate_kibs);
+    free(e->mtu_interf);
+    free(e->mac_address);
+    free(e->ipv4_address);
+    free(e->ipv6_address);
+    free(e->gw_ipv4_address);
+    free(e->gw_ipv6_address);
+    free(e->rx_total_bytes);
+    free(e->rx_total_packs);
+    free(e->rx_total_drops);
+    free(e->rx_total_errors);
+    free(e->tx_total_bytes);
+    free(e->tx_total_packs);
+    free(e->tx_total_drops);
+    free(e->tx_total_errors);
+    free(e->device_link);
+    free(e->duplex_mode);
+
+    e->count = 0;
+    e->active_interf_ct = 0;
+    e->device_name = NULL;
+    e->device_type = NULL;
+    e->active_status = NULL;
+    e->conn_name = NULL;
+    e->tx_rate_kibs = NULL;
+    e->rx_rate_kibs = NULL;
+    e->mtu_interf = NULL;
+    e->mac_address = NULL;
+    e->ipv4_address = NULL;
+    e->ipv6_address = NULL;
+    e->gw_ipv4_address = NULL;
+    e->gw_ipv6_address = NULL;
+    e->rx_total_bytes = NULL;
+    e->rx_total_packs = NULL;
+    e->rx_total_drops = NULL;
+    e->rx_total_errors = NULL;
+    e->tx_total_bytes = NULL;
+    e->tx_total_packs = NULL;
+    e->tx_total_drops = NULL;
+    e->tx_total_errors = NULL;
+    e->device_link = NULL;
+    e->duplex_mode = NULL;
+    e->operstate_mode = NULL;
+    pthread_mutex_unlock(&e->mtx);
     pthread_mutex_destroy(&e->mtx);
 }
 
@@ -67,6 +136,73 @@ void INTRF_update_data(
 )
 {
     pthread_mutex_lock(&e->mtx);
+    if (e->device_name != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->device_name[i]);
+        free(e->device_name);
+    }
+    if (e->device_type != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->device_type[i]);
+        free(e->device_type);
+    }
+    if (e->conn_name != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->conn_name[i]);
+        free(e->conn_name);
+    }
+    if (e->operstate_mode != NULL)
+    {
+        for (int i = 0; i < e->count; ++i) free(e->operstate_mode[i]);
+        free(e->operstate_mode);
+    }
+
+    free(e->active_status);
+    free(e->tx_rate_kibs);
+    free(e->rx_rate_kibs);
+    free(e->mtu_interf);
+    free(e->mac_address);
+    free(e->ipv4_address);
+    free(e->ipv6_address);
+    free(e->gw_ipv4_address);
+    free(e->gw_ipv6_address);
+    free(e->rx_total_bytes);
+    free(e->rx_total_packs);
+    free(e->rx_total_drops);
+    free(e->rx_total_errors);
+    free(e->tx_total_bytes);
+    free(e->tx_total_packs);
+    free(e->tx_total_drops);
+    free(e->tx_total_errors);
+    free(e->device_link);
+    free(e->duplex_mode);
+
+    e->count = 0;
+    e->active_interf_ct = 0;
+    e->device_name = NULL;
+    e->device_type = NULL;
+    e->active_status = NULL;
+    e->conn_name = NULL;
+    e->tx_rate_kibs = NULL;
+    e->rx_rate_kibs = NULL;
+    e->mtu_interf = NULL;
+    e->mac_address = NULL;
+    e->ipv4_address = NULL;
+    e->ipv6_address = NULL;
+    e->gw_ipv4_address = NULL;
+    e->gw_ipv6_address = NULL;
+    e->rx_total_bytes = NULL;
+    e->rx_total_packs = NULL;
+    e->rx_total_drops = NULL;
+    e->rx_total_errors = NULL;
+    e->tx_total_bytes = NULL;
+    e->tx_total_packs = NULL;
+    e->tx_total_drops = NULL;
+    e->tx_total_errors = NULL;
+    e->device_link = NULL;
+    e->duplex_mode = NULL;
+    e->operstate_mode = NULL;
+
     e->count = new_count;
     e->active_interf_ct = new_active_interf_ct;
     e->device_name = new_device_name;
