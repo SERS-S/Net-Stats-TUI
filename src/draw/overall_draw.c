@@ -152,8 +152,8 @@ static void print_data(const char* data, int type){
     int h = getmaxy(stdscr);
     int l = getmaxx(stdscr);
     int rows = 5;
-    int skip_rows = MAX((h - 4 - rows)/10, 2);
-    int skip_table = MIN(10, l - 40);
+    int skip_rows = MAX((h - 4 - rows)/10, 1);
+    int skip_table = l - 50;
     int y;
     int x;
     int len = strlen(data);
@@ -162,7 +162,7 @@ static void print_data(const char* data, int type){
         y += skip_rows;
         x = 2;
     }else{
-        x = 33 + skip_table;
+        x = 33 + 10;
     }
     if(y >= h - 4||  len >= l - x){
         wmove(stdscr,y + skip_rows, 2);

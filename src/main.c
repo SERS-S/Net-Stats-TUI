@@ -22,6 +22,8 @@
 #include "draw/wifi_draw.h"
 #include "draw/network_profiles_draw.h"
 
+int last_key = 0;
+
 static const char *TABS[] = 
 {
     "Overall", "Interfaces",
@@ -152,6 +154,8 @@ int main(void)
         int ch = getch();
 
         if (ch == 'q' || ch == 'Q') break;
+
+        last_key = ch;
 
         if (ch == '\t') 
         {
