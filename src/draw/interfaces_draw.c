@@ -186,29 +186,37 @@ static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
         }
         x += widths[8] + 1;
         
-        if (x < max_x) {
-            char link_str[8];
-            if (intrf->device_link) {
-                int speed_mbps = intrf->device_link[i];
-                if (speed_mbps >= 1000) {
-                    int speed_g = speed_mbps / 1000;
-                    if (speed_g > 999) {
-                        strcpy(link_str, ">999G");
-                    } else {
-                        snprintf(link_str, sizeof(link_str), "%dG", speed_g);
-                    }
-                } else {
-                    if (speed_mbps > 999) {
-                        strcpy(link_str, ">999M");
-                    } else {
-                        snprintf(link_str, sizeof(link_str), "%dM", speed_mbps);
-                    }
-                }
+if (x < max_x) {
+    char link_str[8] = "-";
+    if (intrf->device_link) {
+        int speed_mbps = intrf->device_link[i];
+        if (speed_mbps >= 1000) {
+            int speed_g = speed_mbps / 1000;
+            if (speed_g > 999) {
+                strcpy(link_str, ">999G");
             } else {
-                strcpy(link_str, "-");
+                // Используем более безопасный подход
+                if (speed_g > 99) {
+                    strcpy(link_str, ">99G");
+                } else {
+                    snprintf(link_str, sizeof(link_str), "%dG", speed_g);
+                }
             }
-            mvprintw(table_y, x, "%-*s", widths[9], link_str);
+        } else {
+            if (speed_mbps > 999) {
+                strcpy(link_str, ">999M");
+            } else {
+                // Для Mbps тоже ограничиваем
+                if (speed_mbps > 99) {
+                    strcpy(link_str, ">99M");
+                } else {
+                    snprintf(link_str, sizeof(link_str), "%dM", speed_mbps);
+                }
+            }
         }
+    }
+    mvprintw(table_y, x, "%-*s", widths[9], link_str);
+}
         
         if (i == focused_row) {
             attroff(A_REVERSE);
@@ -370,10 +378,7 @@ void draw_bottom(int top_end, INTRF *intrf) {
     y++;
     if (y >= y_bottom_limit) return;
     
-    
-    // ------------------------------------------------------------------------
-    // GATEWAY
-    // ------------------------------------------------------------------------
+
     if (intrf->gw_ipv4_address && intrf->gw_ipv4_address[i]) {
         mvprintw(y, 4, "GW:  %d.%d.%d.%d",
                 intrf->gw_ipv4_address[i][0],
@@ -392,7 +397,7 @@ void draw_bottom(int top_end, INTRF *intrf) {
                 intrf->gw_ipv6_address[i][6], intrf->gw_ipv6_address[i][7]);
     }
 }
-// Вспомогательные функции для форматирования
+
 static const char* format_bytes(int bytes) {
     static char buffer[32];
     if (bytes < 1024) {
