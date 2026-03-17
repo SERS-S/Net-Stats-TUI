@@ -4,14 +4,75 @@
 #include <ncurses.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 // Объявляем внешнюю переменную из main
 extern int last_key;
 
 static int focused_row = 0;
+static int sort_ascending = 1;  // 1 - по возрастанию, 0 - по убыванию
+static int sorted = 0;  // флаг, что массив отсортирован
+static int *sort_indices = NULL;  // массив индексов для сортировки
+static int sort_indices_size = 0;  // размер массива индексов
+static INTRF *global_intrf = NULL;  // глобальный указатель для функций сравнения
 
 static const char* format_bytes(int bytes);
 static const char* format_packets(int packets);
+
+// Функция сравнения для qsort (по возрастанию)
+static int compare_asc(const void *a, const void *b) {
+    int idx_a = *(int *)a;
+    int idx_b = *(int *)b;
+    
+    if (!global_intrf || !global_intrf->device_name) return 0;
+    
+    const char *name_a = global_intrf->device_name[idx_a] ? global_intrf->device_name[idx_a] : "";
+    const char *name_b = global_intrf->device_name[idx_b] ? global_intrf->device_name[idx_b] : "";
+    
+    return strcmp(name_a, name_b);
+}
+
+// Функция сравнения для qsort (по убыванию)
+static int compare_desc(const void *a, const void *b) {
+    return -compare_asc(a, b);
+}
+
+// Инициализация массива индексов для сортировки
+static void init_sort_indices(INTRF *intrf) {
+    if (!intrf || intrf->count <= 0) return;
+    
+    // Если размер изменился, пересоздаём массив
+    if (sort_indices_size != intrf->count) {
+        if (sort_indices) {
+            free(sort_indices);
+        }
+        sort_indices = (int *)malloc(intrf->count * sizeof(int));
+        sort_indices_size = intrf->count;
+    }
+    
+    // Заполняем индексами по порядку
+    for (int i = 0; i < intrf->count; i++) {
+        sort_indices[i] = i;
+    }
+    
+    sorted = 0;
+}
+
+// Функция сортировки
+static void sort_interfaces(INTRF *intrf) {
+    if (!intrf || intrf->count <= 0) return;
+    
+    init_sort_indices(intrf);
+    
+    // Сортируем индексы
+    if (sort_ascending) {
+        qsort(sort_indices, intrf->count, sizeof(int), compare_asc);
+    } else {
+        qsort(sort_indices, intrf->count, sizeof(int), compare_desc);
+    }
+    
+    sorted = 1;
+}
 
 static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
     if (!intrf || intrf->count <= 0) {
@@ -21,8 +82,24 @@ static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
         return;
     }
     
+    // Устанавливаем глобальный указатель для функций сравнения
+    global_intrf = intrf;
+    
+    // Инициализируем массив индексов при первом вызове
+    if (sort_indices_size != intrf->count) {
+        init_sort_indices(intrf);
+    }
+    
     // Обрабатываем нажатую клавишу
-    if (last_key == KEY_UP && focused_row > 0) {
+    if (last_key == 's' || last_key == 'S') {
+        // Меняем направление сортировки при повторном нажатии
+        if (sorted) {
+            sort_ascending = !sort_ascending;
+        }
+        sort_interfaces(intrf);
+        focused_row = 0;  // Сбрасываем выделение на первый элемент
+        last_key = 0;
+    } else if (last_key == KEY_UP && focused_row > 0) {
         focused_row--;
         last_key = 0;
     } else if (last_key == KEY_DOWN && focused_row < intrf->count - 1) {
@@ -49,7 +126,20 @@ static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
     
     if (start_y < max_y && start_x < max_x) {
         attron(A_BOLD);
-        mvprintw(table_y, start_x, "СЕТЕВЫЕ ИНТЕРФЕЙСЫ (всего: %d)", intrf->count);
+        
+        // Увеличиваем буфер для индикатора сортировки
+        char sort_indicator[128] = "";
+        
+        if (sorted) {
+            snprintf(sort_indicator, sizeof(sort_indicator), 
+                     " [сортировка: %s, нажмите 's' для смены направления]", 
+                     sort_ascending ? "A->Z" : "Z->A");
+        } else {
+            snprintf(sort_indicator, sizeof(sort_indicator), " [нажмите 's' для сортировки]");
+        }
+        
+        mvprintw(table_y, start_x, "СЕТЕВЫЕ ИНТЕРФЕЙСЫ (всего: %d)%s", 
+                 intrf->count, sort_indicator);
         attroff(A_BOLD);
     }
     
@@ -77,12 +167,16 @@ static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
     
     table_y += 1;
     
-    for (int i = 0; i < intrf->count; i++) {
+    // Определяем, какой индекс использовать для отображения
+    for (int display_pos = 0; display_pos < intrf->count; display_pos++) {
         if (table_y >= max_y) break;
+        
+        // Получаем реальный индекс в массиве данных
+        int i = sorted ? sort_indices[display_pos] : display_pos;
         
         x = start_x;
         
-        if (i == focused_row) {
+        if (display_pos == focused_row) {
             attron(A_REVERSE);
         }
         
@@ -186,39 +280,37 @@ static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
         }
         x += widths[8] + 1;
         
-if (x < max_x) {
-    char link_str[8] = "-";
-    if (intrf->device_link) {
-        int speed_mbps = intrf->device_link[i];
-        if (speed_mbps >= 1000) {
-            int speed_g = speed_mbps / 1000;
-            if (speed_g > 999) {
-                strcpy(link_str, ">999G");
-            } else {
-                // Используем более безопасный подход
-                if (speed_g > 99) {
-                    strcpy(link_str, ">99G");
+        if (x < max_x) {
+            char link_str[16] = "-";
+            if (intrf->device_link) {
+                int speed_mbps = intrf->device_link[i];
+                if (speed_mbps >= 1000) {
+                    int speed_g = speed_mbps / 1000;
+                    if (speed_g > 999) {
+                        strcpy(link_str, ">999G");
+                    } else {
+                        if (speed_g > 99) {
+                            strcpy(link_str, ">99G");
+                        } else {
+                            snprintf(link_str, sizeof(link_str), "%dG", speed_g);
+                        }
+                    }
                 } else {
-                    snprintf(link_str, sizeof(link_str), "%dG", speed_g);
+                    if (speed_mbps > 999) {
+                        strcpy(link_str, ">999M");
+                    } else {
+                        if (speed_mbps > 99) {
+                            strcpy(link_str, ">99M");
+                        } else {
+                            snprintf(link_str, sizeof(link_str), "%dM", speed_mbps);
+                        }
+                    }
                 }
             }
-        } else {
-            if (speed_mbps > 999) {
-                strcpy(link_str, ">999M");
-            } else {
-                // Для Mbps тоже ограничиваем
-                if (speed_mbps > 99) {
-                    strcpy(link_str, ">99M");
-                } else {
-                    snprintf(link_str, sizeof(link_str), "%dM", speed_mbps);
-                }
-            }
+            mvprintw(table_y, x, "%-*s", widths[9], link_str);
         }
-    }
-    mvprintw(table_y, x, "%-*s", widths[9], link_str);
-}
         
-        if (i == focused_row) {
+        if (display_pos == focused_row) {
             attroff(A_REVERSE);
         }
         
@@ -250,7 +342,7 @@ void draw_intrf(void *ptr, int y, int x){
     int h = getmaxy(stdscr);
     int l = getmaxx(stdscr);
     int top_end = draw_top(intrf);
-    draw_bottom(top_end, intrf);  // Теперь передаём intrf
+    draw_bottom(top_end, intrf);
 }
 
 void draw_bottom(int top_end, INTRF *intrf) {
@@ -265,12 +357,25 @@ void draw_bottom(int top_end, INTRF *intrf) {
     int y_status = max_y - 2;
     int y_bottom_limit = y_status - 1;
     
-    int i = focused_row;
+    // Определяем реальный индекс выбранного интерфейса с учётом сортировки
+    int i;
+    if (sorted) {
+        if (focused_row >= 0 && focused_row < intrf->count) {
+            i = sort_indices[focused_row];
+        } else {
+            i = focused_row;
+        }
+    } else {
+        i = focused_row;
+    }
+    
+    if (i < 0 || i >= intrf->count) {
+        return;
+    }
     
     if (y_start >= y_bottom_limit) {
         return;
     }
-    
     
     // Очищаем область деталей
     for (int row = y_start; row < y_bottom_limit; row++) {
@@ -279,7 +384,6 @@ void draw_bottom(int top_end, INTRF *intrf) {
     }
     
     int y = y_start;
-    
     
     // ------------------------------------------------------------------------
     // ЗАГОЛОВОК
@@ -291,7 +395,6 @@ void draw_bottom(int top_end, INTRF *intrf) {
     
     y += 2;
     if (y >= y_bottom_limit) return;
-    
     
     // ------------------------------------------------------------------------
     // IP АДРЕСА
@@ -319,7 +422,6 @@ void draw_bottom(int top_end, INTRF *intrf) {
     y++;
     if (y >= y_bottom_limit) return;
     
-    
     // ------------------------------------------------------------------------
     // RX СТАТИСТИКА
     // ------------------------------------------------------------------------
@@ -332,7 +434,6 @@ void draw_bottom(int top_end, INTRF *intrf) {
     y++;
     if (y >= y_bottom_limit) return;
     
-    
     // ------------------------------------------------------------------------
     // TX СТАТИСТИКА
     // ------------------------------------------------------------------------
@@ -344,7 +445,6 @@ void draw_bottom(int top_end, INTRF *intrf) {
     
     y++;
     if (y >= y_bottom_limit) return;
-    
     
     // ------------------------------------------------------------------------
     // LINK ИНФОРМАЦИЯ
@@ -378,7 +478,9 @@ void draw_bottom(int top_end, INTRF *intrf) {
     y++;
     if (y >= y_bottom_limit) return;
     
-
+    // ------------------------------------------------------------------------
+    // GATEWAY
+    // ------------------------------------------------------------------------
     if (intrf->gw_ipv4_address && intrf->gw_ipv4_address[i]) {
         mvprintw(y, 4, "GW:  %d.%d.%d.%d",
                 intrf->gw_ipv4_address[i][0],
@@ -423,6 +525,7 @@ static const char* format_packets(int packets) {
     }
     return buffer;
 }
+
 void line_to_end(void) {
     int y, x;
     getyx(stdscr, y, x); 
