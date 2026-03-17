@@ -39,5 +39,6 @@ void CONSOCK_update_data(
     char **new_proc_name
 );
 CONSOCK CONSOCK_get_data(CONSOCK *e);
+void CONSOCK_free_copy(CONSOCK *e);
 
 #endif

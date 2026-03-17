@@ -26,5 +26,6 @@ void NETPROF_update_data(
     char **new_state
 );
 NETPROF NETPROF_get_data(NETPROF *e);
+void NETPROF_free_copy(NETPROF *e);
 
 #endif

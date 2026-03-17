@@ -35,5 +35,6 @@ void ADDRDNS_update_data(
     char *new_resolv_path
 );
 ADDRDNS ADDRDNS_get_data(ADDRDNS *e);
+void ADDRDNS_free_copy(ADDRDNS *e);
 
 #endif

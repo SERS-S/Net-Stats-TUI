@@ -689,6 +689,8 @@ void* addr_dns_event_update(void *arg)
             free(D_NAMES[i]);
         }
         free(D_NAMES);
+
+        sleep(1);
     }
 
     return NULL;

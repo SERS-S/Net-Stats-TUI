@@ -65,5 +65,6 @@ void INTRF_update_data(
     char **new_operstate_mode
 );
 INTRF INTRF_get_data(INTRF *e);
+void INTRF_free_copy(INTRF *e);
 
 #endif

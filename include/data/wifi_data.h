@@ -38,5 +38,6 @@ void WIFI_update_data(
     float *new_beacon_loss_per_sec
 );
 WIFI WIFI_get_data(WIFI *e);
+void WIFI_free_copy(WIFI *e);
 
 #endif

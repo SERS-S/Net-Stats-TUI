@@ -325,11 +325,14 @@ int draw_top(INTRF *intrf) {
 }
 
 void draw_intrf(void *ptr, int y, int x){
-    INTRF *intrf = (INTRF *)ptr;
+    INTRF snapshot = INTRF_get_data((INTRF *)ptr);
+    INTRF *intrf = &snapshot;
     int h = getmaxy(stdscr);
     int l = getmaxx(stdscr);
     int top_end = draw_top(intrf);
     draw_bottom(top_end, intrf);
+    global_intrf = NULL;
+    INTRF_free_copy(&snapshot);
 }
 
 void draw_bottom(int top_end, INTRF *intrf) {

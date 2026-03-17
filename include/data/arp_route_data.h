@@ -53,5 +53,6 @@ void ARPRT_update_data(
     double *new_neighbor_last_seen_sec
 );
 ARPRT ARPRT_get_data(ARPRT *e);
+void ARPRT_free_copy(ARPRT *e);
 
 #endif
