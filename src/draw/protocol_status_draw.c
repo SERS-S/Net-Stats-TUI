@@ -35,7 +35,7 @@ void draw_protst(void *ptr, int y, int x) {
         return;
     }
     
-    PROTST snapshot = *(PROTST *)ptr;
+    PROTST snapshot = PROTST_get_data((PROTST *)ptr);
     
     int max_y = getmaxy(stdscr);
     int max_x = getmaxx(stdscr);

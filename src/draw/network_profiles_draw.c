@@ -11,7 +11,7 @@ void draw_netprof(void *ptr, int y, int x) {
         return;
     }
     
-    NETPROF snapshot = *(NETPROF *)ptr;
+    NETPROF snapshot = NETPROF_get_data((NETPROF *)ptr);
     
     int max_y = getmaxy(stdscr);
     int max_x = getmaxx(stdscr);
@@ -96,4 +96,5 @@ void draw_netprof(void *ptr, int y, int x) {
         mvprintw(current_y, x, "... и ещё %d профилей", snapshot.count - rows_to_show);
         current_y++;
     }
+    NETPROF_free_copy(&snapshot);
 }

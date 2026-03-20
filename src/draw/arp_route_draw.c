@@ -8,7 +8,7 @@
 void draw_arprt(void *ptr, int y, int x) {
     if (!ptr) return;
     
-    ARPRT snapshot = *(ARPRT *)ptr;
+    ARPRT snapshot = ARPRT_get_data((ARPRT *)ptr);
     
     int max_y = getmaxy(stdscr);
     int max_x = getmaxx(stdscr);
@@ -119,4 +119,6 @@ void draw_arprt(void *ptr, int y, int x) {
         mvprintw(current_y, x, "No neighbors");
         current_y++;
     }
+
+    ARPRT_free_copy(&snapshot);
 }

@@ -11,7 +11,7 @@ void draw_wifi(void *ptr, int y, int x) {
         return;
     }
     
-    WIFI snapshot = *(WIFI *)ptr;
+    WIFI snapshot = WIFI_get_data((WIFI *)ptr);
     
     int max_y = getmaxy(stdscr);
     int max_x = getmaxx(stdscr);
@@ -94,4 +94,5 @@ void draw_wifi(void *ptr, int y, int x) {
         mvprintw(current_y, x, "... и ещё %d интерфейсов", snapshot.count - max_interfaces);
         current_y++;
     }
+    WIFI_free_copy(&snapshot);
 }

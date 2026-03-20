@@ -27,7 +27,7 @@ void draw_consock(void *ptr, int y, int x) {
         return;
     }
     
-    CONSOCK snapshot = *(CONSOCK *)ptr;
+    CONSOCK snapshot = CONSOCK_get_data((CONSOCK *)ptr);
     
     int max_y = getmaxy(stdscr);
     int max_x = getmaxx(stdscr);
@@ -106,4 +106,5 @@ void draw_consock(void *ptr, int y, int x) {
         mvprintw(current_y, x, "... и ещё %d соединений", snapshot.count - rows_to_show);
         current_y++;
     }
+    CONSOCK_free_copy(&snapshot);
 }

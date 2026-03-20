@@ -22,7 +22,7 @@ void draw_addrdns(void *ptr, int y, int x) {
         return;
     }
     
-    ADDRDNS snapshot = *(ADDRDNS *)ptr;
+    ADDRDNS snapshot = ADDRDNS_get_data((ADDRDNS *)ptr);
     
     int max_y = getmaxy(stdscr) - 1;
     int max_x = getmaxx(stdscr);
@@ -120,4 +120,5 @@ void draw_addrdns(void *ptr, int y, int x) {
         }
     }
     current_y += 2;
+    ADDRDNS_free_copy(&snapshot);
 }
