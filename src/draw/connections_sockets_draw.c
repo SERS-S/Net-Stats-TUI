@@ -33,12 +33,7 @@ void draw_consock(void *ptr, int y, int x) {
     int max_x = getmaxx(stdscr);
     
     if (y >= max_y - 3 || x >= max_x) return;
-    
-    for (int row = y; row < max_y - 3; row++) {
-        move(row, x);
-        clrtoeol();
-    }
-    
+
     int current_y = y + 2;
     
     if (current_y < max_y - 3) {
