@@ -2,16 +2,36 @@
 #include "data/overall_data.h"
 #include <curses.h>
 #include <string.h>
+
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static void draw_sparkline(int y, int x, const float *data, int count);
 static void print_data(const char*, int);
+static void draw_box_panel(int top, int left, int width, int height, const char *title);
 
-void draw_ovrll(void *ptr, int y, int x){
+void draw_ovrll(void *ptr, int y, int x)
+{
     OVRLL snapshot = OVRLL_get_data(ptr);
-    int x_starter = x;
-    wmove(stdscr,y, x_starter);
+    int h = getmaxy(stdscr);
+    int l = getmaxx(stdscr);
+    int rows = 5;
+    int skip_rows = MAX((h - 4 - rows) / 10, 1);
+    int panel_top = y + 1;
+    int panel_left = 2;
+    int panel_width = l - 4;
+    int panel_height = (6 * skip_rows) + 4;
+    int x_starter = panel_left + 2;
+
+    if (panel_top + panel_height >= h - 2) {
+        panel_height = h - panel_top - 3;
+    }
+    if (panel_height < 6) {
+        panel_height = 6;
+    }
+
+    draw_box_panel(panel_top, panel_left, panel_width, panel_height, "OVERALL");
+    wmove(stdscr, panel_top + 1, x_starter);
 
     char rx_rate[64];
     char rx_rate_buffer[16];
@@ -31,6 +51,18 @@ void draw_ovrll(void *ptr, int y, int x){
     format_rate(tx_rate_buffer,sizeof(tx_rate_buffer),snapshot.tx_rate_kibs);
     format_rate(rx_total_buffer,sizeof(rx_total_buffer),snapshot.rx_total_kibs);
     format_rate(tx_total_buffer,sizeof(tx_total_buffer),snapshot.tx_total_kibs);
+
+    size_t rx_total_len = strlen(rx_total_buffer);
+    if (rx_total_len >= 2 && strcmp(rx_total_buffer + rx_total_len - 2, "/s") == 0)
+    {
+        rx_total_buffer[rx_total_len - 2] = '\0';
+    }
+
+    size_t tx_total_len = strlen(tx_total_buffer);
+    if (tx_total_len >= 2 && strcmp(tx_total_buffer + tx_total_len - 2, "/s") == 0)
+    {
+        tx_total_buffer[tx_total_len - 2] = '\0';
+    }
 
     snprintf(
         rx_rate, sizeof(rx_rate), 
@@ -110,9 +142,34 @@ void format_rate(char *buffer, int buffer_size, double kib_speed) {
     }
 }
 
+static void draw_box_panel(int top, int left, int width, int height, const char *title)
+{
+    if (width < 4 || height < 3) return;
+
+    mvaddch(top, left, ACS_ULCORNER);
+    mvaddch(top, left + width - 1, ACS_URCORNER);
+    mvaddch(top + height - 1, left, ACS_LLCORNER);
+    mvaddch(top + height - 1, left + width - 1, ACS_LRCORNER);
+
+    mvhline(top, left + 1, ACS_HLINE, width - 2);
+    mvhline(top + height - 1, left + 1, ACS_HLINE, width - 2);
+
+    for (int row = top + 1; row < top + height - 1; ++row)
+    {
+        mvaddch(row, left, ACS_VLINE);
+        mvaddch(row, left + width - 1, ACS_VLINE);
+    }
+
+    if (title != NULL)
+    {
+        mvprintw(top, left + 2, " %s ", title);
+    }
+}
 
 
-static void draw_sparkline(int y, int x, const float *data, int count) {
+
+static void draw_sparkline(int y, int x, const float *data, int count) 
+{
     if (!data || count <= 0) return;
     int h = getmaxy(stdscr);
     int current_y;
@@ -148,21 +205,21 @@ static void draw_sparkline(int y, int x, const float *data, int count) {
     mvprintw(y, ++x, "]");
 }
 
-static void print_data(const char* data, int type){
+static void print_data(const char* data, int type)
+{
     int h = getmaxy(stdscr);
     int l = getmaxx(stdscr);
     int rows = 5;
     int skip_rows = MAX((h - 4 - rows)/10, 1);
-    int skip_table = l - 50;
     int y;
     int x;
     int len = strlen(data);
     getyx(stdscr, y, x);
     if(type ==1){
         y += skip_rows;
-        x = 2;
+        x = 4;
     }else{
-        x = 33 + 10;
+        x = 43;
     }
     if(y >= h - 4||  len >= l - x){
         wmove(stdscr,y + skip_rows, 2);

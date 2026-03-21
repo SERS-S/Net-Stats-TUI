@@ -18,6 +18,8 @@ static INTRF *global_intrf = NULL;
 
 static const char* format_bytes(int bytes);
 static const char* format_packets(int packets);
+static void format_rate(char *buffer, size_t buffer_sz, float kib_speed);
+static void draw_box_panel(int top, int left, int width, int height, const char *title);
 
 static int compare_asc(const void *a, const void *b) {
     int idx_a = *(int *)a;
@@ -105,201 +107,100 @@ static void draw_interfaces_table(INTRF *intrf, int start_y, int start_x) {
         return;
     }
     
-    char *headers[] = {
-        "DEVICE", "TYPE", "STATE", "CONN", 
-        "TX", "RX", "MTU", "MAC", "IPv4", "LINK"
-    };
-    int cols = 10;
-    int widths[] = {8, 8, 6, 8, 8, 8, 6, 18, 16, 6};
-    
     int table_y = start_y;
-    int x = start_x;
-    
-    if (start_y < max_y && start_x < max_x) {
-        attron(A_BOLD);
-        char sort_indicator[128] = "";
-        
-        if (sorted) {
-            snprintf(sort_indicator, sizeof(sort_indicator), 
-                     " [сортировка: %s, нажмите 's' для смены направления]", 
-                     sort_ascending ? "A->Z" : "Z->A");
-        } else {
-            snprintf(sort_indicator, sizeof(sort_indicator), " [нажмите 's' для сортировки]");
-        }
-        
-        mvprintw(table_y, start_x, "СЕТЕВЫЕ ИНТЕРФЕЙСЫ (всего: %d)%s", 
-                 intrf->count, sort_indicator);
-        attroff(A_BOLD);
-    }
-    
-    table_y += 2;
-    if (table_y >= max_y) return;
-    
-    if (table_y < max_y) {
-        attron(A_BOLD);
-        x = start_x;
-        for (int i = 0; i < cols; i++) {
-            if (x + widths[i] < max_x) {
-                mvprintw(table_y, x, "%-*s", widths[i], headers[i]);
-            }
-            x += widths[i] + 1;
-        }
-        attroff(A_BOLD);
-    }
-    
-    table_y += 1;
-    if (table_y >= max_y) return;
-    
-    if (table_y < max_y) {
-        mvhline(table_y, start_x - 1, ACS_HLINE, max_x - (start_x - 1));
-    }
-    
-    table_y += 1;
-    
-    for (int display_pos = 0; display_pos < intrf->count; display_pos++) {
-        if (table_y >= max_y) break;
+    int frame_left = start_x;
+    int frame_width = max_x - start_x - 3;
+    int details_reserved = 9;
+    int row_start = start_y + 5;
+    int max_rows = max_y - details_reserved - row_start;
+    if (max_rows < 1) max_rows = 1;
+    int visible_rows = intrf->count < max_rows ? intrf->count : max_rows;
+    int frame_top = start_y + 2;
+    int frame_height = visible_rows + 4;
+    int frame_bottom = frame_top + frame_height - 1;
+
+    if (frame_width < 20) return;
+
+    attron(A_BOLD);
+    mvprintw(table_y, start_x, "INTERFACES");
+    attroff(A_BOLD);
+
+    mvprintw(
+        table_y + 1,
+        start_x,
+        "Active: %d/%d   Sort: name %s   (s: sort)",
+        intrf->active_interf_ct,
+        intrf->count,
+        sort_ascending ? "v" : "^"
+    );
+
+    draw_box_panel(frame_top, frame_left, frame_width, frame_height, NULL);
+    mvhline(frame_top + 2, frame_left + 1, ACS_HLINE, frame_width - 2);
+
+    attron(A_BOLD);
+    mvprintw(
+        frame_top + 1,
+        frame_left + 2,
+        "%-6s | %-10s | %-7s | %-12s | %-11s | %-11s | %-5s | %-17s",
+        "Dev", "Type", "State", "Conn", "TX (rate)", "RX (rate)", "MTU", "MAC"
+    );
+    attroff(A_BOLD);
+
+    table_y = row_start;
+
+    for (int display_pos = 0; display_pos < visible_rows; display_pos++) {
+        if (table_y >= frame_bottom) break;
     
         int i = sorted ? sort_indices[display_pos] : display_pos;
-        
-        x = start_x;
-        
-        if (display_pos == focused_row) {
-            attron(A_REVERSE);
+        char *status_slot = intrf->active_status ? intrf->active_status + (i * 16) : NULL;
+        const char *status = (status_slot && *status_slot) ? status_slot : "-";
+        int active = strcmp(status, "UP") == 0;
+
+        const char *dev_str;
+        char tx_str[16];
+        char rx_str[16];
+        char mtu_str[8];
+        char mac_str[18];
+        dev_str = intrf->device_name && intrf->device_name[i] ? intrf->device_name[i] : "-";
+
+        if (intrf->tx_rate_kibs) format_rate(tx_str, sizeof(tx_str), intrf->tx_rate_kibs[i]);
+        else strcpy(tx_str, "-");
+
+        if (intrf->rx_rate_kibs) format_rate(rx_str, sizeof(rx_str), intrf->rx_rate_kibs[i]);
+        else strcpy(rx_str, "-");
+
+        if (intrf->mtu_interf) snprintf(mtu_str, sizeof(mtu_str), "%d", intrf->mtu_interf[i]);
+        else strcpy(mtu_str, "-");
+
+        if (intrf->mac_address && intrf->mac_address[i]) {
+            snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
+                    intrf->mac_address[i][0],
+                    intrf->mac_address[i][1],
+                    intrf->mac_address[i][2],
+                    intrf->mac_address[i][3],
+                    intrf->mac_address[i][4],
+                    intrf->mac_address[i][5]);
+        } else {
+            strcpy(mac_str, "-");
         }
-        
-        int active = 0;
-        if (intrf->active_status) {
-            active = (intrf->active_status[i / 8] >> (i % 8)) & 1;
-        }
-        char *status = active ? "UP" : "DOWN";
-        
-        if (x < max_x) {
-            mvprintw(table_y, x, "%-*s", widths[0], 
-                     intrf->device_name && intrf->device_name[i] ? intrf->device_name[i] : "-");
-        }
-        x += widths[0] + 1;
-        
-        if (x < max_x) {
-            mvprintw(table_y, x, "%-*s", widths[1], 
-                     intrf->device_type && intrf->device_type[i] ? intrf->device_type[i] : "-");
-        }
-        x += widths[1] + 1;
-        
-        if (x < max_x) {
-            if (!active) {
-                attron(COLOR_PAIR(1));
-                mvprintw(table_y, x, "%-*s", widths[2], status);
-                attroff(COLOR_PAIR(1));
-            } else {
-                mvprintw(table_y, x, "%-*s", widths[2], status);
-            }
-        }
-        x += widths[2] + 1;
-        
-        if (x < max_x) {
-            mvprintw(table_y, x, "%-*s", widths[3], 
-                     intrf->conn_name && intrf->conn_name[i] ? intrf->conn_name[i] : "-");
-        }
-        x += widths[3] + 1;
-        
-        if (x < max_x) {
-            char tx_str[8];
-            if (intrf->tx_rate_kibs) {
-                snprintf(tx_str, sizeof(tx_str), "%.0f", intrf->tx_rate_kibs[i]);
-            } else {
-                strcpy(tx_str, "-");
-            }
-            mvprintw(table_y, x, "%-*s", widths[4], tx_str);
-        }
-        x += widths[4] + 1;
-        
-        if (x < max_x) {
-            char rx_str[8];
-            if (intrf->rx_rate_kibs) {
-                snprintf(rx_str, sizeof(rx_str), "%.0f", intrf->rx_rate_kibs[i]);
-            } else {
-                strcpy(rx_str, "-");
-            }
-            mvprintw(table_y, x, "%-*s", widths[5], rx_str);
-        }
-        x += widths[5] + 1;
-        
-        if (x < max_x) {
-            char mtu_str[8];
-            if (intrf->mtu_interf) {
-                snprintf(mtu_str, sizeof(mtu_str), "%d", intrf->mtu_interf[i]);
-            } else {
-                strcpy(mtu_str, "-");
-            }
-            mvprintw(table_y, x, "%-*s", widths[6], mtu_str);
-        }
-        x += widths[6] + 1;
-        
-        if (x < max_x) {
-            char mac_str[18];
-            if (intrf->mac_address && intrf->mac_address[i]) {
-                snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X",
-                        intrf->mac_address[i][0],
-                        intrf->mac_address[i][1],
-                        intrf->mac_address[i][2],
-                        intrf->mac_address[i][3],
-                        intrf->mac_address[i][4],
-                        intrf->mac_address[i][5]);
-            } else {
-                strcpy(mac_str, "-");
-            }
-            mvprintw(table_y, x, "%-*s", widths[7], mac_str);
-        }
-        x += widths[7] + 1;
-        
-        if (x < max_x) {
-            char ip_str[16];
-            if (intrf->ipv4_address && intrf->ipv4_address[i]) {
-                snprintf(ip_str, sizeof(ip_str), "%d.%d.%d.%d",
-                        intrf->ipv4_address[i][0],
-                        intrf->ipv4_address[i][1],
-                        intrf->ipv4_address[i][2],
-                        intrf->ipv4_address[i][3]);
-            } else {
-                strcpy(ip_str, "-");
-            }
-            mvprintw(table_y, x, "%-*s", widths[8], ip_str);
-        }
-        x += widths[8] + 1;
-        
-        if (x < max_x) {
-            char link_str[16] = "-";
-            if (intrf->device_link) {
-                int speed_mbps = intrf->device_link[i];
-                if (speed_mbps >= 1000) {
-                    int speed_g = speed_mbps / 1000;
-                    if (speed_g > 999) {
-                        strcpy(link_str, ">999G");
-                    } else {
-                        if (speed_g > 99) {
-                            strcpy(link_str, ">99G");
-                        } else {
-                            snprintf(link_str, sizeof(link_str), "%dG", speed_g);
-                        }
-                    }
-                } else {
-                    if (speed_mbps > 999) {
-                        strcpy(link_str, ">999M");
-                    } else {
-                        if (speed_mbps > 99) {
-                            strcpy(link_str, ">99M");
-                        } else {
-                            snprintf(link_str, sizeof(link_str), "%dM", speed_mbps);
-                        }
-                    }
-                }
-            }
-            mvprintw(table_y, x, "%-*s", widths[9], link_str);
-        }
-        
-        if (display_pos == focused_row) {
-            attroff(A_REVERSE);
-        }
+
+        if (display_pos == focused_row) attron(A_REVERSE);
+        if (!active) attron(COLOR_PAIR(1));
+        mvprintw(
+            table_y,
+            frame_left + 2,
+            "%-6s | %-10s | %-7s | %-12s | %-11s | %-11s | %-5s | %-17s",
+            dev_str,
+            intrf->device_type && intrf->device_type[i] ? intrf->device_type[i] : "-",
+            status,
+            intrf->conn_name && intrf->conn_name[i] ? intrf->conn_name[i] : "-",
+            tx_str,
+            rx_str,
+            mtu_str,
+            mac_str
+        );
+        if (!active) attroff(COLOR_PAIR(1));
+        if (display_pos == focused_row) attroff(A_REVERSE);
         
         table_y += 1;
     }
@@ -312,16 +213,8 @@ int draw_top(INTRF *intrf) {
     
     if (y_top >= max_y) return y_top;
     
-    int h = max_y;
-    int y_bottom = y_top + (h - 5) / 3 * 2 - 2;
-    
-    if (y_bottom >= max_y) {
-        y_bottom = max_y - 1;
-    }
-    
     draw_interfaces_table(intrf, y_top, 2);
-    
-    return y_bottom;
+    return y_top + 2 + ((intrf && intrf->count > 0) ? ((intrf->count < (max_y - 18) ? intrf->count : (max_y - 18)) + 4) : 4) - 1;
 }
 
 void draw_intrf(void *ptr, int y, int x){
@@ -366,24 +259,32 @@ void draw_bottom(int top_end, INTRF *intrf) {
         return;
     }
     
-    for (int row = y_start; row < y_bottom_limit; row++) {
-        move(row, 2);
-        clrtoeol();
-    }
-    
-    int y = y_start;
+    int panel_height = 5;
+    int panel_width = max_x - 6;
+    if (y_start + panel_height >= y_bottom_limit) return;
 
-    attron(A_BOLD | A_UNDERLINE);
-    mvprintw(y, 2, "ДЕТАЛЬНАЯ ИНФОРМАЦИЯ: %s", 
-             intrf->device_name && intrf->device_name[i] ? intrf->device_name[i] : "?");
-    attroff(A_BOLD | A_UNDERLINE);
-    
-    y += 2;
-    if (y >= y_bottom_limit) return;
-    
-    // ------------------------------------------------------------------------
-    // IP АДРЕСА
-    // ------------------------------------------------------------------------
+    for (int row = y_start; row < y_start + panel_height; row++) {
+        mvhline(row, 2, ' ', max_x - 4);
+    }
+
+    char details_title[96];
+    snprintf(
+        details_title,
+        sizeof(details_title),
+        " IFACE DETAILS: %s ",
+        intrf->device_name && intrf->device_name[i] ? intrf->device_name[i] : "?"
+    );
+
+    draw_box_panel(
+        y_start,
+        2,
+        panel_width,
+        panel_height,
+        details_title
+    );
+
+    int y = y_start + 1;
+
     if (intrf->ipv4_address && intrf->ipv4_address[i]) {
         mvprintw(y, 4, "IPv4: %d.%d.%d.%d/24",
                 intrf->ipv4_address[i][0],
@@ -395,7 +296,7 @@ void draw_bottom(int top_end, INTRF *intrf) {
     }
     
     if (intrf->ipv6_address && intrf->ipv6_address[i]) {
-        mvprintw(y, 30, "IPv6: %02x%02x:%02x%02x:%02x%02x:%02x%02x::/64",
+        mvprintw(y, 28, "IPv6: %02x%02x:%02x%02x:%02x%02x:%02x%02x::/64",
                 intrf->ipv6_address[i][0], intrf->ipv6_address[i][1],
                 intrf->ipv6_address[i][2], intrf->ipv6_address[i][3],
                 intrf->ipv6_address[i][4], intrf->ipv6_address[i][5],
@@ -404,27 +305,33 @@ void draw_bottom(int top_end, INTRF *intrf) {
         mvprintw(y, 30, "IPv6: -");
     }
     
+    if (intrf->gw_ipv4_address && intrf->gw_ipv4_address[i]) {
+        mvprintw(y, 62, "GW: %d.%d.%d.%d",
+                intrf->gw_ipv4_address[i][0],
+                intrf->gw_ipv4_address[i][1],
+                intrf->gw_ipv4_address[i][2],
+                intrf->gw_ipv4_address[i][3]);
+    } else {
+        mvprintw(y, 62, "GW: -");
+    }
+
     y++;
     if (y >= y_bottom_limit) return;
-    
-    mvprintw(y, 4, "RX:  bytes %s  pkts %s  drop %d  err %d",
+
+    mvprintw(y, 4, "RX: bytes %s  pkts %s  drop %d  err %d",
              format_bytes(intrf->rx_total_bytes ? intrf->rx_total_bytes[i] : 0),
              format_packets(intrf->rx_total_packs ? intrf->rx_total_packs[i] : 0),
              intrf->rx_total_drops ? intrf->rx_total_drops[i] : 0,
              intrf->rx_total_errors ? intrf->rx_total_errors[i] : 0);
-    
-    y++;
-    if (y >= y_bottom_limit) return;
-    
-    mvprintw(y, 4, "TX:  bytes %s  pkts %s  drop %d  err %d",
+
+    mvprintw(y, 52, "TX: bytes %s  pkts %s  err %d",
              format_bytes(intrf->tx_total_bytes ? intrf->tx_total_bytes[i] : 0),
              format_packets(intrf->tx_total_packs ? intrf->tx_total_packs[i] : 0),
-             intrf->tx_total_drops ? intrf->tx_total_drops[i] : 0,
              intrf->tx_total_errors ? intrf->tx_total_errors[i] : 0);
-    
+
     y++;
     if (y >= y_bottom_limit) return;
-    
+
     char link_str[32] = "-";
     if (intrf->device_link) {
         int speed_mbps = intrf->device_link[i];
@@ -445,32 +352,10 @@ void draw_bottom(int top_end, INTRF *intrf) {
         strncpy(operstate_str, intrf->operstate_mode[i], sizeof(operstate_str) - 1);
     }
     
-    mvprintw(y, 4, "Link: %s  %s-duplex  carrier:%d  operstate: %s",
+    mvprintw(y, 4, "Link: %s  %s-duplex  operstate:%s",
              link_str,
              duplex_str,
-             intrf->device_link ? 1 : 0,
              operstate_str);
-    
-    y++;
-    if (y >= y_bottom_limit) return;
-    
-    if (intrf->gw_ipv4_address && intrf->gw_ipv4_address[i]) {
-        mvprintw(y, 4, "GW:  %d.%d.%d.%d",
-                intrf->gw_ipv4_address[i][0],
-                intrf->gw_ipv4_address[i][1],
-                intrf->gw_ipv4_address[i][2],
-                intrf->gw_ipv4_address[i][3]);
-    } else {
-        mvprintw(y, 4, "GW:  -");
-    }
-    
-    if (intrf->gw_ipv6_address && intrf->gw_ipv6_address[i]) {
-        mvprintw(y, 30, "GW IPv6: %02x%02x:%02x%02x:%02x%02x:%02x%02x::",
-                intrf->gw_ipv6_address[i][0], intrf->gw_ipv6_address[i][1],
-                intrf->gw_ipv6_address[i][2], intrf->gw_ipv6_address[i][3],
-                intrf->gw_ipv6_address[i][4], intrf->gw_ipv6_address[i][5],
-                intrf->gw_ipv6_address[i][6], intrf->gw_ipv6_address[i][7]);
-    }
 }
 
 static const char* format_bytes(int bytes) {
@@ -497,6 +382,38 @@ static const char* format_packets(int packets) {
         snprintf(buffer, sizeof(buffer), "%.1fM", packets / 1000000.0);
     }
     return buffer;
+}
+
+static void format_rate(char *buffer, size_t buffer_sz, float kib_speed) {
+    if (kib_speed / 1024.0f > 1.0f) {
+        snprintf(buffer, buffer_sz, "%.1fMiB/s", kib_speed / 1024.0f);
+    } else {
+        snprintf(buffer, buffer_sz, "%.1f", kib_speed);
+    }
+}
+
+static void draw_box_panel(int top, int left, int width, int height, const char *title)
+{
+    if (width < 4 || height < 3) return;
+
+    mvaddch(top, left, ACS_ULCORNER);
+    mvaddch(top, left + width - 1, ACS_URCORNER);
+    mvaddch(top + height - 1, left, ACS_LLCORNER);
+    mvaddch(top + height - 1, left + width - 1, ACS_LRCORNER);
+
+    mvhline(top, left + 1, ACS_HLINE, width - 2);
+    mvhline(top + height - 1, left + 1, ACS_HLINE, width - 2);
+
+    for (int row = top + 1; row < top + height - 1; ++row)
+    {
+        mvaddch(row, left, ACS_VLINE);
+        mvaddch(row, left + width - 1, ACS_VLINE);
+    }
+
+    if (title != NULL)
+    {
+        mvprintw(top, left + 2, "%s", title);
+    }
 }
 
 void line_to_end(void) {

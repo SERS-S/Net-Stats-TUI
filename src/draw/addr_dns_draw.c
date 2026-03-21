@@ -92,10 +92,6 @@ void draw_addrdns(void *ptr, int y, int x) {
     if (current_y < max_y) {
         mvprintw(current_y, x + 2, "manager = %s",
                  snapshot.manager ? snapshot.manager : "unknown");
-        
-        if (snapshot.manager && strstr(snapshot.manager, "resolved")) {
-            mvprintw(current_y, x + 30, "(stub)");
-        }
     }
     current_y++;
     
@@ -114,10 +110,6 @@ void draw_addrdns(void *ptr, int y, int x) {
     if (current_y < max_y) {
         mvprintw(current_y, x + 2, "resolv.conf: %s",
                  snapshot.resolv_path ? snapshot.resolv_path : "/etc/resolv.conf");
-        
-        if (snapshot.manager && strstr(snapshot.manager, "resolved")) {
-            mvprintw(current_y, x + 40, "→ (stub)");
-        }
     }
     current_y += 2;
     ADDRDNS_free_copy(&snapshot);
