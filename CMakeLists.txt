@@ -5,6 +5,8 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(GNUInstallDirs)
+
 file(GLOB SRC_DATA "${CMAKE_CURRENT_SOURCE_DIR}/src/data/*.c")
 file(GLOB SRC_DRAW "${CMAKE_CURRENT_SOURCE_DIR}/src/draw/*.c")
 file(GLOB SRC_REACTOR "${CMAKE_CURRENT_SOURCE_DIR}/src/reactor/*.c")
@@ -41,4 +43,4 @@ if(LIBNL3_FOUND AND LIBNLGENL3_FOUND)
     target_compile_definitions(net-stats PRIVATE NET_STATS_HAS_LIBNL)
 endif()
 
-install(TARGETS net-stats RUNTIME DESTINATION bin)
+install(TARGETS net-stats RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

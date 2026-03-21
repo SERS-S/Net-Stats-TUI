@@ -304,14 +304,17 @@ static int read_socket_proc_pid(unsigned long inode, pid_t *out)
 
         while ((fd_ent = readdir(fd_dir)) != NULL)
         {
-            char link_path[PATH_MAX];
             char link_target[PATH_MAX];
             ssize_t link_len;
 
             if (fd_ent->d_name[0] == '.') continue;
 
-            snprintf(link_path, sizeof(link_path), "%s/%s", fd_dir_path, fd_ent->d_name);
-            link_len = readlink(link_path, link_target, sizeof(link_target) - 1);
+            link_len = readlinkat(
+                dirfd(fd_dir),
+                fd_ent->d_name,
+                link_target,
+                sizeof(link_target) - 1
+            );
             if (link_len < 0) continue;
             link_target[link_len] = '\0';
 

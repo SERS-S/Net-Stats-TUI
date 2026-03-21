@@ -82,13 +82,13 @@ static void draw_ui(
         char buf[64];
         snprintf(buf, sizeof(buf), "[%s]", TABS[i]);
 
-        if (x + (int)strlen(buf) >= cols - 2) break;
+        if (x + (int) strlen(buf) >= cols - 2) break;
 
         if (i == active_tab) attron(A_REVERSE);
         mvprintw(y_tabs, x, "%s", buf);
         if (i == active_tab) attroff(A_REVERSE);
 
-        x += (int)strlen(buf) + 1;
+        x += (int) strlen(buf) + 1;
     }
 
     int y_sep = 2;
